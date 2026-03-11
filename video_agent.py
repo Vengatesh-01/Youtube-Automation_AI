@@ -216,7 +216,16 @@ def get_shorts_visual(scene_label, duration, topic_title, scene_data, img_path=N
             else:
                 return 1.20 - 0.20 * (t / duration)
         
-        bg = bg.resized(height=1920)
+        # Robust cover resizing to avoid black bars
+        w, h = bg.size
+        ratio = h / float(w)
+        target_ratio = 1920 / 1080.0
+        
+        if ratio > target_ratio: # Image is taller than target
+            bg = bg.resized(width=1080)
+        else: # Image is wider than target
+            bg = bg.resized(height=1920)
+            
         bg = bg.with_effects([vfx.Resize(zoom_effect)])
         bg = bg.with_position(("center", "center"))
         return bg
@@ -311,7 +320,7 @@ def create_video(script, voice_file: str, topic_title: str = "Viral Short") -> s
                 method="caption", 
                 size=(950, None), 
                 text_align="center"
-            ).with_start(idx * c_dur).with_duration(c_dur).with_position(("center", "center")) # centered, scaled down to avoid cut off
+            ).with_start(idx * c_dur).with_duration(c_dur).with_position(("center", 1150)) # slightly below center for visibility
             
             # Pop Effect
             def pop_animation(t):

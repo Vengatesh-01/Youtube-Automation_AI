@@ -16,6 +16,24 @@ RULES:
 1. Tone: Motivational, clear, and engaging.
 2. Hook: Start with a powerful shocking fact, curiosity question, or surprising statement.
 3. Length: STRICTLY between 60 to 90 words total. BE SHORT.
+<<<<<<< HEAD
+4. Format: You MUST return the script exactly in this scene format:
+
+Scene 1:
+[Powerful Hook]
+
+Scene 2:
+[Explanation of the concept]
+
+Scene 3:
+[A relatable example]
+
+Scene 4:
+[The key lesson]
+
+Scene 5:
+[Motivational ending/Call to action]
+=======
 4. Format: You MUST return the script in this specific format for each scene:
 
 Scene 1:
@@ -28,6 +46,7 @@ RULES FOR VISUALS:
 - Describe a realistic character action that matches the content (e.g., "sitting on a bench looking sad", "walking confidently", "reacting with a surprised face").
 - Keep visual descriptions to under 10 words.
 - Ensure the character is consistent (Pixar style).
+>>>>>>> clean_main
 
 Do not include any other text, labels, or intros. Just Scene 1 to Scene 5.
 """
@@ -40,7 +59,11 @@ Do not include any other text, labels, or intros. Just Scene 1 to Scene 5.
     }
 
     try:
+<<<<<<< HEAD
+        response = requests.post(url, json=payload, timeout=60)
+=======
         response = requests.post(url, json=payload, timeout=180)
+>>>>>>> clean_main
         response.raise_for_status()
         result = response.json()
         raw_script = result.get("response", "").strip()
