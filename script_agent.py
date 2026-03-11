@@ -16,24 +16,6 @@ RULES:
 1. Tone: Motivational, clear, and engaging.
 2. Hook: Start with a powerful shocking fact, curiosity question, or surprising statement.
 3. Length: STRICTLY between 60 to 90 words total. BE SHORT.
-<<<<<<< HEAD
-4. Format: You MUST return the script exactly in this scene format:
-
-Scene 1:
-[Powerful Hook]
-
-Scene 2:
-[Explanation of the concept]
-
-Scene 3:
-[A relatable example]
-
-Scene 4:
-[The key lesson]
-
-Scene 5:
-[Motivational ending/Call to action]
-=======
 4. Format: You MUST return the script in this specific format for each scene:
 
 Scene 1:
@@ -46,7 +28,6 @@ RULES FOR VISUALS:
 - Describe a realistic character action that matches the content (e.g., "sitting on a bench looking sad", "walking confidently", "reacting with a surprised face").
 - Keep visual descriptions to under 10 words.
 - Ensure the character is consistent (Pixar style).
->>>>>>> clean_main
 
 Do not include any other text, labels, or intros. Just Scene 1 to Scene 5.
 """
@@ -59,11 +40,7 @@ Do not include any other text, labels, or intros. Just Scene 1 to Scene 5.
     }
 
     try:
-<<<<<<< HEAD
-        response = requests.post(url, json=payload, timeout=60)
-=======
         response = requests.post(url, json=payload, timeout=180)
->>>>>>> clean_main
         response.raise_for_status()
         result = response.json()
         raw_script = result.get("response", "").strip()
@@ -86,11 +63,11 @@ def generate_script(topic: dict) -> str:
     if not script_text:
         # Emergency minimal fallback if Ollama is down
         script_text = (
-            "Scene 1:\n95% of people fail because they quit too early.\n\n"
-            "Scene 2:\nSuccess is a marathon, not a sprint.\n\n"
-            "Scene 3:\nThink of an athlete training in the dark.\n\n"
-            "Scene 4:\nConsistency beats intensity every single time.\n\n"
-            "Scene 5:\nKeep going. Your future self is counting on you!"
+            "Scene 1:\n95% of people fail because they quit too early. | VISUAL: Character walking slowly looking tired | TEXT: QUIT TOO EARLY\n\n"
+            "Scene 2:\nSuccess is a marathon, not a sprint. | VISUAL: Character sitting on a bench thinking | TEXT: SUCCESS MARATHON\n\n"
+            "Scene 3:\nThink of an athlete training in the dark. | VISUAL: Character running in a dark park | TEXT: TRAINING HARD\n\n"
+            "Scene 4:\nConsistency beats intensity every single time. | VISUAL: Character lifting a weights with a smile | TEXT: BE CONSISTENT\n\n"
+            "Scene 5:\nKeep going. Your future self is counting on you! | VISUAL: Character standing on a cliff looking at sunset | TEXT: DON'T STOP"
         )
 
     os.makedirs("scripts", exist_ok=True)
@@ -118,7 +95,6 @@ def sync_to_github():
         print("✅ [SYNC] Successfully pushed to Cloud!")
     except Exception as e:
         print(f"❌ [SYNC] Error pushing to GitHub: {e}")
-
 
 if __name__ == "__main__":
     import sys, json
