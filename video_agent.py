@@ -91,13 +91,15 @@ def extract_scenes(script_text):
             visual_match = re.search(r'\|\s*VISUAL:\s*(.*?)\s*(?=\||$)', part)
             text_match = re.search(r'\|\s*TEXT:\s*(.*?)(?=$|\|)', part)
             
+            if visual_match:
+                scenes[current_marker]["visual_prompt"] = visual_match.group(1).strip()
+            
+            # Combine clean content for text
             clean_content = re.sub(r'\|\s*VISUAL:.*?(?=\||$)', '', part)
             clean_content = re.sub(r'\|\s*TEXT:.*?(?=$|\|)', '', clean_content).strip()
             
             if clean_content:
                 scenes[current_marker]["text"] += clean_content + " "
-            if visual_match:
-                scenes[current_marker]["visual_prompt"] = visual_match.group(1).strip()
             if text_match:
                 scenes[current_marker]["overlay_text"] = text_match.group(1).strip()
             
@@ -127,9 +129,11 @@ def generate_pollinations_image(prompt, output_path, timeout=120):
     import time
     import random
     
-    # Enhanced Flux-optimized prompt for that specific Pixar 'glow' and 'warmth'
+    # Dynamic pose integration: ensure prompt reflects the action requested
+    action_cue = prompt if "character" in prompt.lower() else f"character {prompt}"
     enhanced_prompt = (
-        f"3D Pixar Disney style animation, high-quality 3D render, {prompt}, "
+        f"3D Pixar Disney style animation, high-quality 3D render, {action_cue}, "
+        "expressive face with a little smile, eyes blinking and moving, "
         "subsurface scattering, warm volumetric lighting, soft shadows, "
         "vibrant colors, highly detailed textures, 8k, cinematic composition, 9:16 aspect ratio"
     )
@@ -137,7 +141,7 @@ def generate_pollinations_image(prompt, output_path, timeout=120):
     
     # Model rotation strategy to handle 500 errors gracefully
     models = ["flux", "turbo", "unity"]
-    max_retries = 6 # Increased retries to cover all models and potential transient spikes
+    max_retries = 1 # Quick fail-fast to ensure rapid video generation
     
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
@@ -299,15 +303,15 @@ def create_video(script, voice_file: str, topic_title: str = "Viral Short") -> s
         try:
             cp = TextClip(
                 text=chunk_text.upper(), 
-                font_size=125, 
+                font_size=90, 
                 color="white", # PURE WHITE TEXT
                 stroke_color="black", # THICK BLACK OUTLINE
-                stroke_width=9, 
+                stroke_width=6, 
                 font=FONT_BOLD_PATH,
                 method="caption", 
                 size=(950, None), 
                 text_align="center"
-            ).with_start(idx * c_dur).with_duration(c_dur).with_position(("center", 1100)) # slightly below center
+            ).with_start(idx * c_dur).with_duration(c_dur).with_position(("center", "center")) # centered, scaled down to avoid cut off
             
             # Pop Effect
             def pop_animation(t):
