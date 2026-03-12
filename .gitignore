@@ -5,14 +5,26 @@ __pycache__/
 venv/
 .env
 
-# YouTube Credentials (SENSITIVE)
-# Do not upload these! Add them as Environment Variables in Render.
-client_secrets.json
-token.json
-
-# Local Assets / Outputs
+# Media & Assets
 videos/
-thumbnails/
+*.mp4
+*.wav
+*.mp3
+scripts/script_*.txt
+voiceovers/voiceover_*.mp3
+blender_render.log
+character_gen.log
+diag_results.json
+blender_full_diag.txt
+temp_blender_script_*.py
+jsonst_moviepy_no_audi
+# Keeping diagnostics and orchestrators
+!test_fusion.py
+!verify_cinematic.py
+!run_cinematic_production.py
+!create_proxy_character.py
+!blender_diag.py
+!assets/character.blend
 voiceovers/
 topics/
 temp_test/
