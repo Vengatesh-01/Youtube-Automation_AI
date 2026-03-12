@@ -23,6 +23,7 @@ import glob
 import traceback
 import psutil
 import json
+from utils import safe_print
 
 print("--- [BOOT] YouTube Automation System Starting... ---", flush=True)
 
@@ -135,7 +136,9 @@ def log(msg):
         mem = psutil.virtual_memory().percent
         timestamp = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')
         log_line = f"[{timestamp}] [RAM: {mem}%] {msg}"
-        print(log_line, flush=True)
+        
+        # Windows console safe print
+        safe_print(log_line)
         
         # Persistent log file in videos directory (mounted disk on Render)
         os.makedirs("videos", exist_ok=True)

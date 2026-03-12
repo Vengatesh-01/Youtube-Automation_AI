@@ -2,6 +2,7 @@ import os
 import asyncio
 import edge_tts
 from datetime import datetime
+from utils import safe_print
 
 VOICE = "en-US-AndrewNeural"  # Professional energetic voice for educational shorts
 
@@ -15,7 +16,7 @@ async def _synthesize(text: str, output_file: str):
         except Exception as e:
             if attempt == max_retries - 1:
                 raise e
-            print(f"TTS attempt {attempt + 1} failed ({e}). Retrying in 2s...")
+            safe_print(f"TTS attempt {attempt + 1} failed ({e}). Retrying in 2s...")
             await asyncio.sleep(2)
 
 def generate_voice(script) -> str:
@@ -28,10 +29,10 @@ def generate_voice(script) -> str:
     if isinstance(script, str) and os.path.isfile(script):
         with open(script, "r", encoding="utf-8") as f:
             script_text = f.read()
-        print(f"Reading script from {script}")
+        safe_print(f"Reading script from {script}")
     else:
         script_text = script
-        print("Using provided script text.")
+        safe_print("Using provided script text.")
 
     os.makedirs("voiceovers", exist_ok=True)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -40,9 +41,9 @@ def generate_voice(script) -> str:
     import re
     speech_text = re.sub(r'\[.*?\]', '', script_text).strip()
 
-    print("Generating voiceover with Edge TTS...")
+    safe_print("Generating voiceover with Edge TTS...")
     asyncio.run(_synthesize(speech_text, output_file))
-    print(f"Voiceover saved to {output_file}")
+    safe_print(f"Voiceover saved to {output_file}")
     return output_file
 
 # Backward-compatible alias
@@ -53,4 +54,4 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         generate_voice(sys.argv[1])
     else:
-        print("Usage: python voice_agent.py <path_to_script_txt>")
+        safe_print("Usage: python voice_agent.py <path_to_script_txt>")

@@ -4,6 +4,7 @@ from datetime import datetime
 from PIL import Image, ImageDraw, ImageFont
 import requests
 import urllib.parse
+from utils import safe_print
 
 OUTPUT_DIR = "thumbnails"
 THUMBNAIL_WIDTH = 1280
@@ -42,7 +43,7 @@ def generate_pollinations_thumbnail(prompt, output_path):
                 f.write(response.content)
             return True
     except Exception as e:
-        print(f"Thumbnail API failed: {e}")
+        safe_print(f"Thumbnail API failed: {e}")
     return False
 
 def generate_thumbnail(title: str, category: str = "Trending") -> str:
@@ -112,7 +113,7 @@ def generate_thumbnail(title: str, category: str = "Trending") -> str:
             draw.text((x, y), ln, font=title_font, fill=(255, 255, 255))
 
     img.save(output_file, quality=95)
-    print(f"Thumbnail saved to {output_file}")
+    safe_print(f"Thumbnail saved to {output_file}")
     
     if success and os.path.exists(temp_img_path):
         os.remove(temp_img_path)

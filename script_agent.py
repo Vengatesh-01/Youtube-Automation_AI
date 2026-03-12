@@ -3,34 +3,37 @@ import requests
 import json
 import re
 from datetime import datetime
+from utils import safe_print
 
 def generate_script_with_ollama(topic_dict):
     """Generate a high-retention 60-90 word motivational script using local Llama3."""
     title = topic_dict.get("title", "Discipline")
     
-    prompt = f"""
-You are a professional YouTube Shorts scriptwriter for a motivational channel like 'Excuse Eraser'.
-Write a VERY CONCISE motivational and educational script about: {title}
+    prompt = f"""You are an expert YouTube Shorts scriptwriter. Write a motivational script about: {title}
 
-RULES:
-1. Tone: Motivational, clear, and engaging.
-2. Hook: Start with a powerful shocking fact, curiosity question, or surprising statement.
-3. Length: STRICTLY between 60 to 90 words total. BE SHORT.
-4. Format: You MUST return the script in this specific format for each scene:
-
+OUTPUT FORMAT - FOLLOW EXACTLY, NO EXCEPTIONS:
 Scene 1:
-[Text to speak] | VISUAL: [Character pose like walking, sitting, reacting] | TEXT: [Short 1-3 word overlay]
+[spoken text] | VISUAL: [specific pose] | TEXT: [1-3 word overlay]
 
 Scene 2:
-...and so on.
+[spoken text] | VISUAL: [specific pose] | TEXT: [1-3 word overlay]
 
-RULES FOR VISUALS:
-- Describe a realistic character action that matches the content (e.g., "sitting on a bench looking sad", "walking confidently", "reacting with a surprised face").
-- Keep visual descriptions to under 10 words.
-- Ensure the character is consistent (Pixar style).
+Scene 3:
+[spoken text] | VISUAL: [specific pose] | TEXT: [1-3 word overlay]
 
-Do not include any other text, labels, or intros. Just Scene 1 to Scene 5.
-"""
+Scene 4:
+[spoken text] | VISUAL: [specific pose] | TEXT: [1-3 word overlay]
+
+Scene 5:
+[spoken text] | VISUAL: [specific pose] | TEXT: [1-3 word overlay]
+
+STRICT RULES:
+- Total spoken words: 60-90 words ONLY. BE CONCISE.
+- Hook: Scene 1 MUST start with a shocking fact or question.
+- VISUAL descriptions MUST be specific actions: e.g. "young man running on a track at dawn", "child sitting alone looking sad", "athlete lifting weights with determination", "person staring at stars on a rooftop at night", "entrepreneur working late at a glowing desk". DO NOT write generic descriptions like "Pixar character".
+- TEXT overlays: 1-3 words max, ALL CAPS.
+- Output ONLY the 5 scenes. Do NOT add any intro, explanation, or notes before or after.
+- Do NOT add any markdown, asterisks, or headers."""
 
     url = "http://localhost:11434/api/generate"
     payload = {
@@ -47,16 +50,16 @@ Do not include any other text, labels, or intros. Just Scene 1 to Scene 5.
         
         # Basic validation to ensure "Scene" markers exist
         if "Scene 1" not in raw_script or "Scene 5" not in raw_script:
-            print("⚠️ Ollama output format mismatch. Falling back to structured parsing attempt.")
+            safe_print("⚠️ Ollama output format mismatch. Falling back to structured parsing attempt.")
             
         return raw_script
     except Exception as e:
-        print(f"❌ Ollama Error: {e}")
+        safe_print(f"❌ Ollama Error: {e}")
         return None
 
 def generate_script(topic: dict) -> str:
     """Generate script using local Ollama model."""
-    print(f"🚀 [SCRIPT] Generating local Llama3 script for: {topic.get('title')}")
+    safe_print(f"🚀 [SCRIPT] Generating local Llama3 script for: {topic.get('title')}")
     
     script_text = generate_script_with_ollama(topic)
     
@@ -76,7 +79,7 @@ def generate_script(topic: dict) -> str:
     with open(script_file, "w", encoding="utf-8") as f:
         f.write(script_text)
 
-    print(f"✅ Local AI script generated and saved to {script_file}")
+    safe_print(f"✅ Local AI script generated and saved to {script_file}")
     
     # Optional: Auto-sync to cloud if running in auto-mode
     if os.environ.get("AUTO_SYNC_TO_CLOUD") == "true":
@@ -86,15 +89,15 @@ def generate_script(topic: dict) -> str:
 
 def sync_to_github():
     """Automatically push new scripts to GitHub so Render can see them."""
-    print("☁️ [SYNC] Pushing new scripts to GitHub...")
+    safe_print("☁️ [SYNC] Pushing new scripts to GitHub...")
     try:
         import subprocess
         subprocess.run(["git", "add", "scripts/*.txt"], check=True)
         subprocess.run(["git", "commit", "-m", "Automated AI script generation"], check=True)
         subprocess.run(["git", "push", "origin", "main"], check=True)
-        print("✅ [SYNC] Successfully pushed to Cloud!")
+        safe_print("✅ [SYNC] Successfully pushed to Cloud!")
     except Exception as e:
-        print(f"❌ [SYNC] Error pushing to GitHub: {e}")
+        safe_print(f"❌ [SYNC] Error pushing to GitHub: {e}")
 
 if __name__ == "__main__":
     import sys, json
@@ -103,4 +106,4 @@ if __name__ == "__main__":
             topic = json.load(f)
         generate_script(topic)
     else:
-        print("Usage: python script_agent.py <path_to_topic_json>")
+        safe_print("Usage: python script_agent.py <path_to_topic_json>")
