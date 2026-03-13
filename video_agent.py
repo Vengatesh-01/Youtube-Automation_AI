@@ -60,8 +60,8 @@ def extract_keywords(text):
     keywords = [w for w in words if w not in stop_words]
     return list(dict.fromkeys(keywords))
 
-# 9:16 Shorts Configuration
-TARGET_RESOLUTION = (1080, 1920)
+# 16:9 Landscape Configuration
+TARGET_RESOLUTION = (1920, 1080)
 
 def extract_scenes(script_text):
     """
@@ -114,26 +114,29 @@ def extract_scenes(script_text):
                 line = line.strip()
                 if not line: continue
                 
+                # Strip markdown bold and list stars
+                clean_line = line.replace("**", "").replace("*", "").lstrip("- ")
+                
                 # Check for specific labels
-                if line.lower().startswith("emotion:"):
-                    scenes[current_marker]["emotion"] = line.split(":", 1)[1].strip()
-                elif line.lower().startswith("camera:"):
-                    scenes[current_marker]["camera"] = line.split(":", 1)[1].strip()
-                elif line.lower().startswith("character action:") or line.lower().startswith("action:") or line.lower().startswith("character:"):
-                    scenes[current_marker]["action"] = line.split(":", 1)[1].strip()
-                elif line.lower().startswith("environment:"):
-                    scenes[current_marker]["environment"] = line.split(":", 1)[1].strip()
-                elif line.lower().startswith("subtitle:"):
-                    scenes[current_marker]["text"] = line.split(":", 1)[1].strip()
-                elif line.lower().startswith("narrative:"):
+                if clean_line.lower().startswith("emotion:"):
+                    scenes[current_marker]["emotion"] = clean_line.split(":", 1)[1].strip()
+                elif clean_line.lower().startswith("camera:"):
+                    scenes[current_marker]["camera"] = clean_line.split(":", 1)[1].strip()
+                elif clean_line.lower().startswith("character action:") or clean_line.lower().startswith("action:") or clean_line.lower().startswith("character:"):
+                    scenes[current_marker]["action"] = clean_line.split(":", 1)[1].strip()
+                elif clean_line.lower().startswith("environment:"):
+                    scenes[current_marker]["environment"] = clean_line.split(":", 1)[1].strip()
+                elif clean_line.lower().startswith("subtitle:"):
+                    scenes[current_marker]["text"] = clean_line.split(":", 1)[1].strip()
+                elif clean_line.lower().startswith("narrative:"):
                     # The spoken dialogue
-                    scenes[current_marker]["spoken_text"] = line.split(":", 1)[1].strip()
-                elif line.lower().startswith("duration:"):
+                    scenes[current_marker]["spoken_text"] = clean_line.split(":", 1)[1].strip()
+                elif clean_line.lower().startswith("duration:"):
                     pass
-                elif "|" in line:
+                elif "|" in clean_line:
                     # Support the old VISUAL | TEXT format too
-                    v_match = re.search(r'VISUAL:\s*(.*?)(?=\||$)', line, re.I)
-                    t_match = re.search(r'TEXT:\s*(.*?)$', line, re.I)
+                    v_match = re.search(r'VISUAL:\s*(.*?)(?=\||$)', clean_line, re.I)
+                    t_match = re.search(r'TEXT:\s*(.*?)$', clean_line, re.I)
                     if v_match: scenes[current_marker]["visual_prompt"] += v_match.group(1).strip() + " "
                     if t_match: scenes[current_marker]["text"] += t_match.group(1).strip() + " "
                 else:
@@ -241,8 +244,17 @@ def create_video(script, voice_file: str, topic_title: str = "Viral Short") -> s
     # Each chunk's duration is proportional to its word count, so longer phrases
     # stay on screen longer and shorter ones flash quickly. Much more readable.
     log_agent("[SUBTITLES] Generating Weighted Timed Captions")
-    clean_text = re.sub(r'\[.*?\]', '', script_text)
-    clean_text = re.sub(r'\|\s*(VISUAL|TEXT|POSE):.*?(?=\||$)', '', clean_text)
+    # Gather clean spoken text from the parsed scenes, not the raw LLM prompt
+    spoken_parts = []
+    for s_id, s_data in scene_defs.items():
+        val = s_data.get("spoken_text", "").strip() or s_data.get("text", "").strip()
+        if val:
+            spoken_parts.append(val.replace('"', ''))
+            
+    clean_text = " ".join(spoken_parts)
+    if not clean_text:
+        clean_text = "Keep going and never give up"
+        
     words = clean_text.split()
 
     chunk_size = 3  # 3 words per frame — more readable, less frantic
@@ -272,9 +284,9 @@ def create_video(script, voice_file: str, topic_title: str = "Viral Short") -> s
                 stroke_width=2,
                 font=FONT_BOLD_PATH,
                 method="caption",
-                size=(940, None),
+                size=(1500, None),
                 text_align="center"
-            ).with_start(current_start).with_duration(c_dur).with_position(("center", 1400))
+            ).with_start(current_start).with_duration(c_dur).with_position(("center", 850))
 
             # Smooth Cinematic Entry (Fade-in + Elastic Pop)
             def cinematic_entry(dur):
@@ -298,6 +310,49 @@ def create_video(script, voice_file: str, topic_title: str = "Viral Short") -> s
             log_agent(f"⚠️ [SUBTITLES] Clip error: {e}")
             current_start += c_dur
             
+    # --- Title & CTA Overlays ---
+    log_agent("[OVERLAYS] Adding Intro Title and Outro CTA")
+    try:
+        # Title Overlay (0-3s)
+        title_clip = TextClip(
+            text=topic_title.upper(),
+            font_size=120,
+            color="yellow",
+            stroke_color="black",
+            stroke_width=3,
+            font=FONT_BOLD_PATH,
+            method="caption",
+            size=(1800, None),
+            text_align="center"
+        ).with_start(0).with_duration(3.0).with_position(("center", 150))
+        
+        title_clip = title_clip.with_effects([
+            vfx.FadeIn(0.5),
+            vfx.FadeOut(0.5)
+        ])
+        
+        # CTA Overlay (Last 4s)
+        cta_start = max(0, total_duration - 4.0)
+        cta_clip = TextClip(
+            text="SUBSCRIBE FOR MORE",
+            font_size=100,
+            color="white",
+            bg_color="red",
+            font=FONT_BOLD_PATH,
+            method="caption",
+            size=(1200, None),
+            text_align="center"
+        ).with_start(cta_start).with_duration(4.0).with_position(("center", "center"))
+        
+        cta_clip = cta_clip.with_effects([
+            vfx.FadeIn(0.5),
+            vfx.CrossFadeIn(0.5) # Add a bit of pop
+        ])
+        
+        caption_clips.extend([title_clip, cta_clip])
+    except Exception as e:
+        log_agent(f"⚠️ [OVERLAYS] Error adding title/CTA: {e}")
+
     final_video = CompositeVideoClip([final_video] + caption_clips)
     
     os.makedirs(OUTPUT_DIR, exist_ok=True)

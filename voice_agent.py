@@ -1,23 +1,29 @@
 import os
-import asyncio
-import edge_tts
+import pyttsx3
 from datetime import datetime
 from utils import safe_print
 
-VOICE = "en-US-AndrewNeural"  # Professional energetic voice for educational shorts
-
-async def _synthesize(text: str, output_file: str):
-    max_retries = 3
-    for attempt in range(max_retries):
-        try:
-            communicate = edge_tts.Communicate(text, VOICE)
-            await communicate.save(output_file)
-            return
-        except Exception as e:
-            if attempt == max_retries - 1:
-                raise e
-            safe_print(f"TTS attempt {attempt + 1} failed ({e}). Retrying in 2s...")
-            await asyncio.sleep(2)
+def _synthesize(text: str, output_file: str):
+    """Fallback fully offline TTS using pyttsx3"""
+    try:
+        engine = pyttsx3.init()
+        # You can adjust properties if needed
+        # engine.setProperty('rate', 150)    
+        # engine.setProperty('volume', 0.9)  
+        
+        # Try to find a good female/male voice if installed
+        voices = engine.getProperty('voices')
+        for voice in voices:
+            if "david" in voice.name.lower() or "zira" in voice.name.lower() or "andrew" in voice.name.lower():
+                engine.setProperty('voice', voice.id)
+                break
+                
+        engine.save_to_file(text, output_file)
+        engine.runAndWait()
+        return True
+    except Exception as e:
+        safe_print(f"Offline TTS failed: {e}")
+        return False
 
 def generate_voice(script) -> str:
     """
@@ -41,8 +47,11 @@ def generate_voice(script) -> str:
     import re
     speech_text = re.sub(r'\[.*?\]', '', script_text).strip()
 
-    safe_print("Generating voiceover with Edge TTS...")
-    asyncio.run(_synthesize(speech_text, output_file))
+    safe_print("Generating voiceover with Offline pyttsx3...")
+    success = _synthesize(speech_text, output_file)
+    if not success:
+        safe_print("[ERROR] Could not generate voiceover.")
+        return None
     safe_print(f"Voiceover saved to {output_file}")
     return output_file
 

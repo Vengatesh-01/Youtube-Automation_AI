@@ -117,8 +117,17 @@ def log(msg):
     print(f"[Blender Script] {msg}")
     sys.stdout.flush()
 
-try:
-    log("Starting internal Blender script...")
+import traceback
+
+def exception_handler(exc_type, exc_value, exc_tb):
+    log("FATAL ERROR in Blender script:")
+    traceback.print_exception(exc_type, exc_value, exc_tb, file=sys.stdout)
+    sys.stdout.flush()
+    sys.exit(1)
+
+sys.excepthook = exception_handler
+
+log("Starting internal Blender script...")
 config_path = r"{{CONFIG_PATH}}"
 if not os.path.exists(config_path):
     print(f"ERROR: Config not found at {config_path}")
@@ -131,13 +140,13 @@ voice_file = config["voice_file"]
 output_path = config["output_path"]
 scenes = config["scenes"]
 
-# --- 2. Setup Render Settings (Cinematic Shorts) ---
+# --- 2. Setup Render Settings (16:9 Full HD) ---
 scene = bpy.context.scene
-scene.render.resolution_x = 1080
-scene.render.resolution_y = 1920
+scene.render.resolution_x = 1920
+scene.render.resolution_y = 1080
 scene.render.resolution_percentage = 100
 scene.render.fps = 30
-scene.render.image_settings.file_format = 'FFMPEG'
+scene.render.image_settings.file_format = 'FFMPEG_VIDEO'
 scene.render.ffmpeg.format = 'MPEG4'
 scene.render.ffmpeg.codec = 'H264'
 scene.render.ffmpeg.audio_codec = 'AAC'
@@ -160,38 +169,114 @@ bg = scene.world.node_tree.nodes.get('Background')
 if bg:
     bg.inputs[0].default_value = (0.05, 0.05, 0.08, 1.0) # Dark cinematic blue
 
+# --- 3a. Generate Background Environments ---
+# Clear existing background objects first
+for obj in bpy.data.objects:
+    if "Env_" in obj.name:
+        bpy.data.objects.remove(obj, do_unlink=True)
+
+def create_environment(env_type):
+    if env_type == "room":
+        # Floor
+        bpy.ops.mesh.primitive_plane_add(size=20, location=(0,0,0))
+        floor = bpy.context.object
+        floor.name = "Env_Floor"
+        mat_floor = bpy.data.materials.new(name="FloorMat")
+        mat_floor.use_nodes = True
+        bsdf_floor = mat_floor.node_tree.nodes.get("Principled BSDF")
+        bsdf_floor.inputs['Base Color'].default_value = (0.2, 0.2, 0.2, 1) # Grey carpet
+        bsdf_floor.inputs['Roughness'].default_value = 0.8
+        floor.data.materials.append(mat_floor)
+        
+        # Walls
+        bpy.ops.mesh.primitive_cube_add(size=20, location=(0, 10, 10))
+        wall1 = bpy.context.object
+        wall1.name = "Env_Wall_1"
+        mat_wall = bpy.data.materials.new(name="WallMat")
+        mat_wall.use_nodes = True
+        bsdf_wall = mat_wall.node_tree.nodes.get("Principled BSDF")
+        bsdf_wall.inputs['Base Color'].default_value = (0.8, 0.8, 0.9, 1) # Light blue wall
+        wall1.data.materials.append(mat_wall)
+
+        bpy.ops.mesh.primitive_cube_add(size=20, location=(10, 0, 10))
+        wall2 = bpy.context.object
+        wall2.name = "Env_Wall_2"
+        wall2.data.materials.append(mat_wall)
+
+    elif env_type == "park":
+        # Grass
+        bpy.ops.mesh.primitive_plane_add(size=30, location=(0,0,0))
+        grass = bpy.context.object
+        grass.name = "Env_Grass"
+        mat_grass = bpy.data.materials.new(name="GrassMat")
+        mat_grass.use_nodes = True
+        bsdf_grass = mat_grass.node_tree.nodes.get("Principled BSDF")
+        bsdf_grass.inputs['Base Color'].default_value = (0.1, 0.5, 0.1, 1) # Green
+        grass.data.materials.append(mat_grass)
+        
+        # Simple Tree Base
+        bpy.ops.mesh.primitive_cylinder_add(radius=0.5, depth=4, location=(-3, 4, 2))
+        trunk = bpy.context.object
+        trunk.name = "Env_TreeTrunk"
+        mat_trunk = bpy.data.materials.new(name="TrunkMat")
+        mat_trunk.use_nodes = True
+        mat_trunk.node_tree.nodes.get("Principled BSDF").inputs['Base Color'].default_value = (0.4, 0.2, 0.1, 1)
+        trunk.data.materials.append(mat_trunk)
+        
+        # Tree Top
+        bpy.ops.mesh.primitive_ico_sphere_add(radius=2, location=(-3, 4, 4))
+        leaves = bpy.context.object
+        leaves.name = "Env_TreeLeaves"
+        mat_leaves = bpy.data.materials.new(name="LeavesMat")
+        mat_leaves.use_nodes = True
+        mat_leaves.node_tree.nodes.get("Principled BSDF").inputs['Base Color'].default_value = (0.05, 0.4, 0.05, 1)
+        leaves.data.materials.append(mat_leaves)
+    else:
+        # Default infinite floor
+        bpy.ops.mesh.primitive_plane_add(size=100, location=(0,0,0))
+        floor = bpy.context.object
+        floor.name = "Env_Floor_Infinite"
+        mat_floor = bpy.data.materials.new(name="InfFloorMat")
+        mat_floor.use_nodes = True
+        mat_floor.node_tree.nodes.get("Principled BSDF").inputs['Base Color'].default_value = (0.1, 0.1, 0.1, 1)
+        floor.data.materials.append(mat_floor)
+
+# Pick a random environment to generate
+env_choice = random.choice(["room", "park", "studio"])
+create_environment(env_choice)
+
 # --- 3. Scene Setup (Camera & Lighting) ---
 # Clear existing junk
 for obj in bpy.data.objects:
     if obj.type in {'CAMERA', 'LIGHT'}:
         bpy.data.objects.remove(obj, do_unlink=True)
 
-# Add Cinematic Camera
-bpy.ops.object.camera_add(location=(0, -4, 1.6), rotation=(math.radians(90), 0, 0))
+# Add Cinematic Camera for 16:9 Landscape
+bpy.ops.object.camera_add(location=(0, -6, 1.6), rotation=(math.radians(90), 0, 0))
 camera = bpy.context.object
 scene.camera = camera
-camera.data.lens = 50 # Cinematic focal length
+camera.data.lens = 45 # Slightly wider for 16:9
 camera.data.use_dof = True
-camera.data.dof.focus_distance = 4.0
-camera.data.dof.aperture_fstop = 1.8 # Soft background
+camera.data.dof.focus_distance = 6.0
+camera.data.dof.aperture_fstop = 2.8 # Less blur, show environment
 
 # Professional 3-Point Area Lighting
 # Key Light (Large Area Light for soft shadows)
 bpy.ops.object.light_add(type='AREA', location=(2.5, -3, 3), rotation=(math.radians(45), 0, math.radians(45)))
 key_light = bpy.context.object
-key_light.data.energy = 500
+key_light.data.energy = 5000
 key_light.data.size = 2.0
 
 # Fill Light
 bpy.ops.object.light_add(type='AREA', location=(-2.5, -2, 2.5), rotation=(math.radians(45), 0, math.radians(-45)))
 fill_light = bpy.context.object
-fill_light.data.energy = 200
+fill_light.data.energy = 2000
 fill_light.data.size = 3.0
 
 # Back Light (Rim Light)
 bpy.ops.object.light_add(type='AREA', location=(0, 3, 3), rotation=(math.radians(135), 0, 0))
 back_light = bpy.context.object
-back_light.data.energy = 800
+back_light.data.energy = 8000
 back_light.data.size = 1.5
 
 # --- 3b. Emotional Lighting Preset Function ---
@@ -202,20 +287,20 @@ def apply_lighting_preset(emotion, world, lights):
     
     if "sad" in emotion:
         bg.inputs[0].default_value = (0.02, 0.02, 0.05, 1.0) # Deep moody blue
-        lights[0].data.energy = 200 # Key
-        lights[1].data.energy = 50 # Fill
-        lights[2].data.energy = 100 # Rim
+        lights[0].data.energy = 2000 # Key
+        lights[1].data.energy = 500 # Fill
+        lights[2].data.energy = 1000 # Rim
     elif "hope" in emotion or "sunrise" in emotion:
         bg.inputs[0].default_value = (0.2, 0.08, 0.05, 1.0) # Warm orange
         lights[0].data.color = (1.0, 0.8, 0.6)
-        lights[0].data.energy = 700
+        lights[0].data.energy = 7000
     elif "success" in emotion or "determined" in emotion:
         bg.inputs[0].default_value = (0.1, 0.1, 0.1, 1.0) # Neutral
-        lights[0].data.energy = 800
-        lights[2].data.energy = 1200 # Strong Rim for "hero" look
+        lights[0].data.energy = 8000
+        lights[2].data.energy = 12000 # Strong Rim for "hero" look
     elif "think" in emotion:
         bg.inputs[0].default_value = (0.05, 0.05, 0.08, 1.0)
-        lights[0].data.energy = 400
+        lights[0].data.energy = 4000
 
 # --- 4. Add Audio to Sequencer ---
 if not scene.sequence_editor:
@@ -324,28 +409,30 @@ if armature and armature.animation_data:
         set_shape_key(emotion_key, 1.0, current_frame + 10)
         set_shape_key(emotion_key, 0.0, end_frame - 5)
 
-        # 4. Camera Movement Logic
+        # 4. Camera Movement Logic (Landscape 16:9 oriented)
         cam_instr = s_data.get("camera", "").upper()
-        if "ZOOM" in cam_instr:
-            camera.location = (0, -5, 1.6)
+        cam_rand = random.random() # Add more randomness
+        
+        if "ZOOM" in cam_instr or cam_rand < 0.2:
+            camera.location = (0, -6, 1.6)
             camera.keyframe_insert(data_path="location", frame=current_frame)
-            camera.location = (0, -3, 1.6)
+            camera.location = (0, -4, 1.6)
             camera.keyframe_insert(data_path="location", frame=end_frame)
-        elif "LOW" in cam_instr:
-            camera.location = (0, -3.5, 0.6)
+        elif "LOW" in cam_instr or (cam_rand >= 0.2 and cam_rand < 0.4):
+            camera.location = (0.5, -5, 0.8)
             camera.rotation_euler[0] = math.radians(100)
             camera.keyframe_insert(data_path="location", frame=current_frame)
             camera.keyframe_insert(data_path="rotation_euler", frame=current_frame)
-        elif "CLOSE" in cam_instr or "FACE" in cam_instr:
-            camera.location = (0, -1.8, 1.7) # Close to head
+        elif "CLOSE" in cam_instr or "FACE" in cam_instr or (cam_rand >= 0.4 and cam_rand < 0.6):
+            camera.location = (0, -2.5, 1.7) # Close to head in 16:9
             camera.keyframe_insert(data_path="location", frame=current_frame)
-        elif "TRACK" in cam_instr:
-            camera.location = (-1.5, -4, 1.6)
+        elif "TRACK" in cam_instr or (cam_rand >= 0.6 and cam_rand < 0.8):
+            camera.location = (-2.5, -5, 1.6)
             camera.keyframe_insert(data_path="location", frame=current_frame)
-            camera.location = (1.5, -4, 1.6)
+            camera.location = (2.5, -5, 1.6)
             camera.keyframe_insert(data_path="location", frame=end_frame)
         else: # Default STATIC-ish with focus
-            camera.location = (0, -4, 1.6)
+            camera.location = (random.uniform(-1, 1), -5, random.uniform(1.2, 1.8))
             camera.rotation_euler = (math.radians(90), 0, 0)
             camera.keyframe_insert(data_path="location", frame=current_frame)
             camera.keyframe_insert(data_path="rotation_euler", frame=current_frame)
@@ -358,11 +445,7 @@ if armature and armature.animation_data:
     log(f"Rendering {scene.frame_end} frames...")
     bpy.ops.render.render(animation=True)
     log("Render complete.")
-except Exception as e:
-    import traceback
-    log(f"FATAL ERROR in Blender script: {str(e)}")
-    log(traceback.format_exc())
-    sys.exit(1)
+
 """
     blender_script_content = blender_script_template.replace("{{CONFIG_PATH}}", config_path)
 
