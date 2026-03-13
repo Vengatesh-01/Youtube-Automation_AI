@@ -11,6 +11,7 @@ RUN apt-get update && apt-get install -y \
     libmagic1 \
     imagemagick \
     fonts-dejavu-core \
+    libespeak-ng1 \
     && rm -rf /var/lib/apt/lists/*
 
 # Fix ImageMagick policy (MoviePy requirement)
