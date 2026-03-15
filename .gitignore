@@ -51,3 +51,11 @@ scripts/
 # OS
 .DS_Store
 Thumbs.db
+
+# Project Specific
+outputs/
+prompts_watch/
+prompts_processed/
+prompts_error/
+daily_status.json
+batch_automation.log

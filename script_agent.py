@@ -9,24 +9,25 @@ def generate_script_with_ollama(topic_dict):
     """Generate a high-retention 60-90 word motivational script using local Llama3."""
     title = topic_dict.get("title", "Discipline")
     
-    prompt = f"""You are a professional cinematic animation director and AI storyteller. Write a powerful motivational script about: {title}
-
-OUTPUT FORMAT - EVERY SCENE MUST FOLLOW THIS STRUCTURE EXACTLY:
-Scene [Number]
-Environment: [specific 3D location, e.g., rainy city alley at night, glowing modern office]
-Character Action: [Action ONLY: Walk, Sit, Talk, Stand, Gesture]
-Emotion: [Mood ONLY: Sad, Hope, Success, Determined, Thinking]
-Camera: [Movement ONLY: Slow Zoom, Tracking Shot, Low Angle, Face Close-up]
-Subtitle: [1-5 words max, bold impact text]
-Narrative: [the spoken dialogue, 15-20 words per scene]
-
-STRICT RULES:
-- Generate exactly 4-6 scenes.
-- Spoken Dialogue: Total duration must be 30-45 seconds (approx 75-100 words).
-- Hook: Scene 1 must be a high-impact visual and vocal hook.
-- Character Actions: Use ONLY the primary verbs (Walk, Sit, Talk, Stand, Gesture).
-- Subtitles: ALL CAPS, high impact.
-- Do NOT add any preamble, explanation, or notes. Output the raw scene data only."""
+    prompt = f"""You are a professional cinematic animation director and AI storyteller. Write a powerful, punchy motivational script (1-2 sentences total) about: {title}
+    
+    OUTPUT FORMAT - EVERY SCENE MUST FOLLOW THIS STRUCTURE EXACTLY:
+    Scene [Number]
+    Environment: [specific 3D location, e.g., rainy city alley at night, glowing modern office]
+    Character Action: [Action ONLY: Walk, Sit, Talk, Stand, Gesture, Blink, Reactive Movement]
+    Emotion: [Mood ONLY: Sad, Hope, Success, Determined, Thinking, Smiling]
+    Camera: [Movement ONLY: Slow Zoom, Tracking Shot, Low Angle, Face Close-up]
+    Subtitle: [1-5 words max, bold impact text]
+    Narrative: [the spoken dialogue, 10-15 words per scene]
+    
+    STRICT RULES:
+    - Generate exactly 3-4 scenes.
+    - Total duration: 15-20 seconds.
+    - Script length: 1-2 sentences total for the entire short.
+    - Hook: Scene 1 must be a high-impact visual and vocal hook.
+    - Character Actions: Include blinking and reactive movements.
+    - Subtitles: ALL CAPS, punchy.
+    - Do NOT add any preamble, explanation, or notes. Output the raw scene data only."""
 
     url = "http://localhost:11434/api/generate"
     payload = {
