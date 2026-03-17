@@ -1,0 +1,17 @@
+[HOOK]
+Action: Walk confidently
+Emotion: Confident
+Camera: Slow Zoom
+TEXT: | VISUAL: Character walking | TEXT: Success is not final, failure is not fatal.
+
+[EXPLANATION]
+Action: Sitting and thinking
+Emotion: Thinking
+Camera: Pan
+TEXT: | VISUAL: Character sitting | TEXT: It is the courage to continue that counts.
+
+[ENDING]
+Action: Standing tall
+Emotion: Happy
+Camera: Low Angle
+TEXT: | VISUAL: Character success | TEXT: Keep moving forward.

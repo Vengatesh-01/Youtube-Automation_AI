@@ -1,0 +1,379 @@
+﻿[VERIFICATION] Starting Cinematic Producer Test...
+[VERIFICATION] Using existing voice file: voiceovers\voiceover_20260312_214223.mp3
+[VERIFICATION] Rendering video with cinematic markers...
+[2026-03-12 16:46:38 UTC] [EliteVideoAgent] [RAM: 53.5%] [INIT] Offline Blender Engine: Cinematic Test
+[2026-03-12 16:46:38 UTC] [EliteVideoAgent] [RAM: 53.6%] [AUDIO] Total duration: 10.0s
+System.Management.Automation.RemoteException
+[2026-03-12 16:46:38 UTC] [EliteVideoAgent] [RAM: 53.6%] [BLENDER] Handing off to Blender Agent for 3D Video Generation...
+[Blender] Validating character asset: assets\character.blend...
+Character asset loaded successfully.
+[Blender] Preparing background animation for assets\ai_scenes\blender_base_735f7d18.mp4...
+[Blender] Starting external render process...
+? [Blender] Video rendered successfully.
+[2026-03-12 16:46:43 UTC] [EliteVideoAgent] [RAM: 53.9%] [BLENDER] Blender generation failed. Generating emergency color clip fallback.
+[2026-03-12 16:46:43 UTC] [EliteVideoAgent] [RAM: 54.2%] [SUBTITLES] Generating Weighted Timed Captions
+[2026-03-12 16:46:44 UTC] [EliteVideoAgent] [RAM: 55.0%] [VIDEO] Rendering visual layers (subtitles)...
+MoviePy - Building video videos\temp_no_audio_221644.mp4.
+MoviePy - Writing video videos\temp_no_audio_221644.mp4
+
+frame_index:   0%|          | 0/300 [00:00<?, ?it/s, now=None]
+frame_index:   1%|          | 2/300 [00:00<00:26, 11.33it/s, now=None]
+frame_index:   1%|1         | 4/300 [00:00<00:48,  6.12it/s, now=None]
+frame_index:   2%|1         | 5/300 [00:00<00:58,  5.01it/s, now=None]
+frame_index:   2%|2         | 6/300 [00:01<00:55,  5.29it/s, now=None]
+frame_index:   2%|2         | 7/300 [00:01<00:55,  5.27it/s, now=None]
+frame_index:   3%|2         | 8/300 [00:01<00:53,  5.44it/s, now=None]
+frame_index:   3%|3         | 9/300 [00:01<00:51,  5.61it/s, now=None]
+frame_index:   3%|3         | 10/300 [00:01<00:50,  5.73it/s, now=None]
+frame_index:   4%|3         | 11/300 [00:01<00:50,  5.70it/s, now=None]
+frame_index:   4%|4         | 12/300 [00:02<00:50,  5.71it/s, now=None]
+frame_index:   4%|4         | 13/300 [00:02<00:50,  5.69it/s, now=None]
+frame_index:   5%|4         | 14/300 [00:02<00:49,  5.72it/s, now=None]
+frame_index:   5%|5         | 15/300 [00:02<00:51,  5.55it/s, now=None]
+frame_index:   5%|5         | 16/300 [00:02<00:51,  5.56it/s, now=None]
+frame_index:   6%|5         | 17/300 [00:02<00:50,  5.60it/s, now=None]
+frame_index:   6%|6         | 18/300 [00:03<00:51,  5.47it/s, now=None]
+frame_index:   6%|6         | 19/300 [00:03<00:51,  5.49it/s, now=None]
+frame_index:   7%|6         | 20/300 [00:03<00:51,  5.46it/s, now=None]
+frame_index:   7%|7         | 21/300 [00:03<00:49,  5.66it/s, now=None]
+frame_index:   7%|7         | 22/300 [00:03<00:50,  5.47it/s, now=None]
+frame_index:   8%|7         | 23/300 [00:04<00:50,  5.50it/s, now=None]
+frame_index:   8%|8         | 24/300 [00:04<00:51,  5.36it/s, now=None]
+frame_index:   8%|8         | 25/300 [00:04<00:50,  5.45it/s, now=None]
+frame_index:   9%|8         | 26/300 [00:04<00:51,  5.32it/s, now=None]
+frame_index:   9%|9         | 27/300 [00:04<00:49,  5.46it/s, now=None]
+frame_index:   9%|9         | 28/300 [00:05<00:52,  5.20it/s, now=None]
+frame_index:  10%|9         | 29/300 [00:05<00:51,  5.26it/s, now=None]
+frame_index:  10%|#         | 30/300 [00:05<00:48,  5.56it/s, now=None]
+frame_index:  10%|#         | 31/300 [00:05<00:46,  5.78it/s, now=None]
+frame_index:  11%|#         | 32/300 [00:05<00:46,  5.74it/s, now=None]
+frame_index:  11%|#1        | 33/300 [00:05<00:46,  5.72it/s, now=None]
+frame_index:  11%|#1        | 34/300 [00:06<00:46,  5.76it/s, now=None]
+frame_index:  12%|#1        | 35/300 [00:06<00:44,  5.92it/s, now=None]
+frame_index:  12%|#2        | 36/300 [00:06<00:44,  5.97it/s, now=None]
+frame_index:  12%|#2        | 37/300 [00:06<00:46,  5.66it/s, now=None]
+frame_index:  13%|#2        | 38/300 [00:06<00:45,  5.82it/s, now=None]
+frame_index:  13%|#3        | 39/300 [00:06<00:45,  5.80it/s, now=None]
+frame_index:  13%|#3        | 40/300 [00:07<00:45,  5.73it/s, now=None]
+frame_index:  14%|#3        | 41/300 [00:07<00:43,  5.94it/s, now=None]
+frame_index:  14%|#4        | 42/300 [00:07<00:42,  6.14it/s, now=None]
+frame_index:  14%|#4        | 43/300 [00:07<00:42,  6.11it/s, now=None]
+frame_index:  15%|#4        | 44/300 [00:07<00:42,  6.01it/s, now=None]
+frame_index:  15%|#5        | 45/300 [00:07<00:42,  5.97it/s, now=None]
+frame_index:  15%|#5        | 46/300 [00:08<00:41,  6.18it/s, now=None]
+frame_index:  16%|#5        | 47/300 [00:08<00:40,  6.25it/s, now=None]
+frame_index:  16%|#6        | 48/300 [00:08<00:40,  6.16it/s, now=None]
+frame_index:  16%|#6        | 49/300 [00:08<00:42,  5.94it/s, now=None]
+frame_index:  17%|#6        | 50/300 [00:08<00:42,  5.91it/s, now=None]
+frame_index:  17%|#7        | 51/300 [00:08<00:41,  5.95it/s, now=None]
+frame_index:  17%|#7        | 52/300 [00:09<00:40,  6.10it/s, now=None]
+frame_index:  18%|#7        | 53/300 [00:09<00:40,  6.06it/s, now=None]
+frame_index:  18%|#8        | 54/300 [00:09<00:41,  5.88it/s, now=None]
+frame_index:  18%|#8        | 55/300 [00:09<00:40,  6.00it/s, now=None]
+frame_index:  19%|#8        | 56/300 [00:09<00:41,  5.93it/s, now=None]
+frame_index:  19%|#9        | 57/300 [00:09<00:41,  5.92it/s, now=None]
+frame_index:  19%|#9        | 58/300 [00:10<00:42,  5.74it/s, now=None]
+frame_index:  20%|#9        | 59/300 [00:10<00:41,  5.84it/s, now=None]
+frame_index:  20%|##        | 60/300 [00:10<00:39,  6.00it/s, now=None]
+frame_index:  20%|##        | 61/300 [00:10<00:38,  6.15it/s, now=None]
+frame_index:  21%|##        | 62/300 [00:10<00:39,  5.95it/s, now=None]
+frame_index:  21%|##1       | 63/300 [00:10<00:38,  6.12it/s, now=None]
+frame_index:  21%|##1       | 64/300 [00:11<00:37,  6.28it/s, now=None]
+frame_index:  22%|##1       | 65/300 [00:11<00:36,  6.52it/s, now=None]
+frame_index:  22%|##2       | 66/300 [00:11<00:34,  6.72it/s, now=None]
+frame_index:  22%|##2       | 67/300 [00:11<00:34,  6.71it/s, now=None]
+frame_index:  23%|##2       | 68/300 [00:11<00:35,  6.60it/s, now=None]
+frame_index:  23%|##3       | 69/300 [00:11<00:34,  6.66it/s, now=None]
+frame_index:  23%|##3       | 70/300 [00:11<00:34,  6.70it/s, now=None]
+frame_index:  24%|##3       | 71/300 [00:12<00:33,  6.79it/s, now=None]
+frame_index:  24%|##4       | 72/300 [00:12<00:32,  6.93it/s, now=None]
+frame_index:  24%|##4       | 73/300 [00:12<00:33,  6.85it/s, now=None]
+frame_index:  25%|##4       | 74/300 [00:12<00:34,  6.51it/s, now=None]
+frame_index:  25%|##5       | 75/300 [00:12<00:35,  6.29it/s, now=None]
+frame_index:  25%|##5       | 76/300 [00:12<00:36,  6.12it/s, now=None]
+frame_index:  26%|##5       | 77/300 [00:13<00:37,  6.02it/s, now=None]
+frame_index:  26%|##6       | 78/300 [00:13<00:36,  6.11it/s, now=None]
+frame_index:  26%|##6       | 79/300 [00:13<00:37,  5.92it/s, now=None]
+frame_index:  27%|##6       | 80/300 [00:13<00:35,  6.13it/s, now=None]
+frame_index:  27%|##7       | 81/300 [00:13<00:34,  6.33it/s, now=None]
+frame_index:  27%|##7       | 82/300 [00:13<00:33,  6.47it/s, now=None]
+frame_index:  28%|##7       | 83/300 [00:14<00:34,  6.31it/s, now=None]
+frame_index:  28%|##8       | 84/300 [00:14<00:36,  5.87it/s, now=None]
+frame_index:  28%|##8       | 85/300 [00:14<00:37,  5.80it/s, now=None]
+frame_index:  29%|##8       | 86/300 [00:14<00:35,  6.06it/s, now=None]
+frame_index:  29%|##9       | 87/300 [00:14<00:34,  6.13it/s, now=None]
+frame_index:  29%|##9       | 88/300 [00:14<00:34,  6.16it/s, now=None]
+frame_index:  30%|##9       | 89/300 [00:14<00:33,  6.37it/s, now=None]
+frame_index:  30%|###       | 90/300 [00:15<00:42,  4.93it/s, now=None]
+frame_index:  30%|###       | 91/300 [00:15<00:40,  5.21it/s, now=None]
+frame_index:  31%|###       | 92/300 [00:15<00:39,  5.24it/s, now=None]
+frame_index:  31%|###1      | 93/300 [00:15<00:38,  5.39it/s, now=None]
+frame_index:  31%|###1      | 94/300 [00:16<00:37,  5.54it/s, now=None]
+frame_index:  32%|###1      | 95/300 [00:16<00:37,  5.53it/s, now=None]
+frame_index:  32%|###2      | 96/300 [00:16<00:36,  5.61it/s, now=None]
+frame_index:  32%|###2      | 97/300 [00:16<00:36,  5.52it/s, now=None]
+frame_index:  33%|###2      | 98/300 [00:16<00:37,  5.38it/s, now=None]
+frame_index:  33%|###3      | 99/300 [00:16<00:37,  5.37it/s, now=None]
+frame_index:  33%|###3      | 100/300 [00:17<00:37,  5.35it/s, now=None]
+frame_index:  34%|###3      | 101/300 [00:17<00:37,  5.34it/s, now=None]
+frame_index:  34%|###4      | 102/300 [00:17<00:37,  5.26it/s, now=None]
+frame_index:  34%|###4      | 103/300 [00:17<00:37,  5.26it/s, now=None]
+frame_index:  35%|###4      | 104/300 [00:17<00:36,  5.36it/s, now=None]
+frame_index:  35%|###5      | 105/300 [00:18<00:34,  5.67it/s, now=None]
+frame_index:  35%|###5      | 106/300 [00:18<00:35,  5.50it/s, now=None]
+frame_index:  36%|###5      | 107/300 [00:18<00:34,  5.56it/s, now=None]
+frame_index:  36%|###6      | 108/300 [00:18<00:34,  5.61it/s, now=None]
+frame_index:  36%|###6      | 109/300 [00:18<00:34,  5.55it/s, now=None]
+frame_index:  37%|###6      | 110/300 [00:18<00:34,  5.44it/s, now=None]
+frame_index:  37%|###7      | 111/300 [00:19<00:35,  5.29it/s, now=None]
+frame_index:  37%|###7      | 112/300 [00:19<00:34,  5.38it/s, now=None]
+frame_index:  38%|###7      | 113/300 [00:19<00:33,  5.54it/s, now=None]
+frame_index:  38%|###8      | 114/300 [00:19<00:31,  5.83it/s, now=None]
+frame_index:  38%|###8      | 115/300 [00:19<00:30,  5.98it/s, now=None]
+frame_index:  39%|###8      | 116/300 [00:19<00:30,  6.04it/s, now=None]
+frame_index:  39%|###9      | 117/300 [00:20<00:30,  6.03it/s, now=None]
+frame_index:  39%|###9      | 118/300 [00:20<00:29,  6.10it/s, now=None]
+frame_index:  40%|###9      | 119/300 [00:20<00:31,  5.70it/s, now=None]
+frame_index:  40%|####      | 120/300 [00:20<00:33,  5.45it/s, now=None]
+frame_index:  40%|####      | 121/300 [00:20<00:32,  5.50it/s, now=None]
+frame_index:  41%|####      | 122/300 [00:21<00:31,  5.60it/s, now=None]
+frame_index:  41%|####1     | 123/300 [00:21<00:30,  5.83it/s, now=None]
+frame_index:  41%|####1     | 124/300 [00:21<00:30,  5.79it/s, now=None]
+frame_index:  42%|####1     | 125/300 [00:21<00:29,  5.99it/s, now=None]
+frame_index:  42%|####2     | 126/300 [00:21<00:29,  5.82it/s, now=None]
+frame_index:  42%|####2     | 127/300 [00:21<00:28,  6.10it/s, now=None]
+frame_index:  43%|####2     | 128/300 [00:21<00:27,  6.36it/s, now=None]
+frame_index:  43%|####3     | 129/300 [00:22<00:26,  6.42it/s, now=None]
+frame_index:  43%|####3     | 130/300 [00:22<00:26,  6.33it/s, now=None]
+frame_index:  44%|####3     | 131/300 [00:22<00:26,  6.32it/s, now=None]
+frame_index:  44%|####4     | 132/300 [00:22<00:26,  6.23it/s, now=None]
+frame_index:  44%|####4     | 133/300 [00:22<00:27,  6.15it/s, now=None]
+frame_index:  45%|####4     | 134/300 [00:22<00:27,  6.08it/s, now=None]
+frame_index:  45%|####5     | 135/300 [00:23<00:27,  6.04it/s, now=None]
+frame_index:  45%|####5     | 136/300 [00:23<00:27,  5.92it/s, now=None]
+frame_index:  46%|####5     | 137/300 [00:23<00:28,  5.73it/s, now=None]
+frame_index:  46%|####6     | 138/300 [00:23<00:29,  5.58it/s, now=None]
+frame_index:  46%|####6     | 139/300 [00:23<00:28,  5.59it/s, now=None]
+frame_index:  47%|####6     | 140/300 [00:24<00:29,  5.35it/s, now=None]
+frame_index:  47%|####6     | 141/300 [00:24<00:29,  5.44it/s, now=None]
+frame_index:  47%|####7     | 142/300 [00:24<00:27,  5.77it/s, now=None]
+frame_index:  48%|####7     | 143/300 [00:24<00:27,  5.80it/s, now=None]
+frame_index:  48%|####8     | 144/300 [00:24<00:26,  5.82it/s, now=None]
+frame_index:  48%|####8     | 145/300 [00:24<00:25,  6.02it/s, now=None]
+frame_index:  49%|####8     | 146/300 [00:25<00:24,  6.20it/s, now=None]
+frame_index:  49%|####9     | 147/300 [00:25<00:25,  6.07it/s, now=None]
+frame_index:  49%|####9     | 148/300 [00:25<00:24,  6.17it/s, now=None]
+frame_index:  50%|####9     | 149/300 [00:25<00:24,  6.27it/s, now=None]
+frame_index:  50%|#####     | 150/300 [00:25<00:24,  6.13it/s, now=None]
+frame_index:  50%|#####     | 151/300 [00:25<00:28,  5.18it/s, now=None]
+frame_index:  51%|#####     | 152/300 [00:26<00:26,  5.62it/s, now=None]
+frame_index:  51%|#####1    | 153/300 [00:26<00:25,  5.66it/s, now=None]
+frame_index:  51%|#####1    | 154/300 [00:26<00:24,  5.85it/s, now=None]
+frame_index:  52%|#####1    | 155/300 [00:26<00:25,  5.72it/s, now=None]
+frame_index:  52%|#####2    | 156/300 [00:26<00:24,  5.81it/s, now=None]
+frame_index:  52%|#####2    | 157/300 [00:26<00:23,  6.05it/s, now=None]
+frame_index:  53%|#####2    | 158/300 [00:27<00:23,  6.14it/s, now=None]
+frame_index:  53%|#####3    | 159/300 [00:27<00:25,  5.60it/s, now=None]
+frame_index:  53%|#####3    | 160/300 [00:27<00:24,  5.61it/s, now=None]
+frame_index:  54%|#####3    | 161/300 [00:27<00:25,  5.53it/s, now=None]
+frame_index:  54%|#####4    | 162/300 [00:27<00:23,  5.84it/s, now=None]
+frame_index:  54%|#####4    | 163/300 [00:27<00:22,  5.97it/s, now=None]
+frame_index:  55%|#####4    | 164/300 [00:28<00:22,  6.15it/s, now=None]
+frame_index:  55%|#####5    | 165/300 [00:28<00:22,  6.01it/s, now=None]
+frame_index:  55%|#####5    | 166/300 [00:28<00:22,  6.06it/s, now=None]
+frame_index:  56%|#####5    | 167/300 [00:28<00:22,  5.93it/s, now=None]
+frame_index:  56%|#####6    | 168/300 [00:28<00:21,  6.15it/s, now=None]
+frame_index:  56%|#####6    | 169/300 [00:28<00:21,  6.14it/s, now=None]
+frame_index:  57%|#####6    | 170/300 [00:29<00:21,  6.09it/s, now=None]
+frame_index:  57%|#####6    | 171/300 [00:29<00:21,  6.00it/s, now=None]
+frame_index:  57%|#####7    | 172/300 [00:29<00:21,  5.88it/s, now=None]
+frame_index:  58%|#####7    | 173/300 [00:29<00:21,  6.02it/s, now=None]
+frame_index:  58%|#####8    | 174/300 [00:29<00:20,  6.05it/s, now=None]
+frame_index:  58%|#####8    | 175/300 [00:29<00:21,  5.90it/s, now=None]
+frame_index:  59%|#####8    | 176/300 [00:30<00:21,  5.65it/s, now=None]
+frame_index:  59%|#####8    | 177/300 [00:30<00:21,  5.81it/s, now=None]
+frame_index:  59%|#####9    | 178/300 [00:30<00:21,  5.58it/s, now=None]
+frame_index:  60%|#####9    | 179/300 [00:30<00:21,  5.64it/s, now=None]
+frame_index:  60%|######    | 180/300 [00:30<00:21,  5.69it/s, now=None]
+frame_index:  60%|######    | 181/300 [00:31<00:20,  5.81it/s, now=None]
+frame_index:  61%|######    | 182/300 [00:31<00:19,  6.10it/s, now=None]
+frame_index:  61%|######1   | 183/300 [00:31<00:19,  6.09it/s, now=None]
+frame_index:  61%|######1   | 184/300 [00:31<00:19,  5.86it/s, now=None]
+frame_index:  62%|######1   | 185/300 [00:31<00:20,  5.69it/s, now=None]
+frame_index:  62%|######2   | 186/300 [00:31<00:19,  5.73it/s, now=None]
+frame_index:  62%|######2   | 187/300 [00:32<00:19,  5.77it/s, now=None]
+frame_index:  63%|######2   | 188/300 [00:32<00:19,  5.73it/s, now=None]
+frame_index:  63%|######3   | 189/300 [00:32<00:19,  5.76it/s, now=None]
+frame_index:  63%|######3   | 190/300 [00:32<00:19,  5.66it/s, now=None]
+frame_index:  64%|######3   | 191/300 [00:32<00:19,  5.72it/s, now=None]
+frame_index:  64%|######4   | 192/300 [00:32<00:17,  6.04it/s, now=None]
+frame_index:  64%|######4   | 193/300 [00:33<00:17,  6.22it/s, now=None]
+frame_index:  65%|######4   | 194/300 [00:33<00:17,  6.07it/s, now=None]
+frame_index:  65%|######5   | 195/300 [00:33<00:17,  6.04it/s, now=None]
+frame_index:  65%|######5   | 196/300 [00:33<00:18,  5.77it/s, now=None]
+frame_index:  66%|######5   | 197/300 [00:33<00:18,  5.53it/s, now=None]
+frame_index:  66%|######6   | 198/300 [00:33<00:17,  5.75it/s, now=None]
+frame_index:  66%|######6   | 199/300 [00:34<00:20,  4.98it/s, now=None]
+frame_index:  67%|######6   | 200/300 [00:34<00:18,  5.42it/s, now=None]
+frame_index:  67%|######7   | 201/300 [00:34<00:18,  5.50it/s, now=None]
+frame_index:  67%|######7   | 202/300 [00:34<00:17,  5.51it/s, now=None]
+frame_index:  68%|######7   | 203/300 [00:34<00:17,  5.44it/s, now=None]
+frame_index:  68%|######8   | 204/300 [00:35<00:19,  5.02it/s, now=None]
+frame_index:  68%|######8   | 205/300 [00:35<00:18,  5.14it/s, now=None]
+frame_index:  69%|######8   | 206/300 [00:35<00:16,  5.53it/s, now=None]
+frame_index:  69%|######9   | 207/300 [00:35<00:16,  5.52it/s, now=None]
+frame_index:  69%|######9   | 208/300 [00:35<00:16,  5.42it/s, now=None]
+frame_index:  70%|######9   | 209/300 [00:36<00:16,  5.61it/s, now=None]
+frame_index:  70%|#######   | 210/300 [00:36<00:16,  5.59it/s, now=None]
+frame_index:  70%|#######   | 211/300 [00:36<00:16,  5.51it/s, now=None]
+frame_index:  71%|#######   | 212/300 [00:36<00:15,  5.82it/s, now=None]
+frame_index:  71%|#######1  | 213/300 [00:36<00:15,  5.61it/s, now=None]
+frame_index:  71%|#######1  | 214/300 [00:36<00:14,  5.77it/s, now=None]
+frame_index:  72%|#######1  | 215/300 [00:37<00:15,  5.41it/s, now=None]
+frame_index:  72%|#######2  | 216/300 [00:37<00:15,  5.36it/s, now=None]
+frame_index:  72%|#######2  | 217/300 [00:37<00:16,  5.08it/s, now=None]
+frame_index:  73%|#######2  | 218/300 [00:37<00:15,  5.35it/s, now=None]
+frame_index:  73%|#######3  | 219/300 [00:37<00:14,  5.55it/s, now=None]
+frame_index:  73%|#######3  | 220/300 [00:38<00:15,  5.26it/s, now=None]
+frame_index:  74%|#######3  | 221/300 [00:38<00:15,  5.09it/s, now=None]
+frame_index:  74%|#######4  | 222/300 [00:38<00:14,  5.28it/s, now=None]
+frame_index:  74%|#######4  | 223/300 [00:38<00:14,  5.23it/s, now=None]
+frame_index:  75%|#######4  | 224/300 [00:38<00:14,  5.26it/s, now=None]
+frame_index:  75%|#######5  | 225/300 [00:38<00:14,  5.31it/s, now=None]
+frame_index:  75%|#######5  | 226/300 [00:39<00:14,  5.16it/s, now=None]
+frame_index:  76%|#######5  | 227/300 [00:39<00:13,  5.26it/s, now=None]
+frame_index:  76%|#######6  | 228/300 [00:39<00:13,  5.34it/s, now=None]
+frame_index:  76%|#######6  | 229/300 [00:39<00:13,  5.30it/s, now=None]
+frame_index:  77%|#######6  | 230/300 [00:40<00:14,  4.81it/s, now=None]
+frame_index:  77%|#######7  | 231/300 [00:40<00:13,  5.15it/s, now=None]
+frame_index:  77%|#######7  | 232/300 [00:40<00:13,  5.20it/s, now=None]
+frame_index:  78%|#######7  | 233/300 [00:40<00:12,  5.26it/s, now=None]
+frame_index:  78%|#######8  | 234/300 [00:40<00:12,  5.16it/s, now=None]
+frame_index:  78%|#######8  | 235/300 [00:40<00:12,  5.26it/s, now=None]
+frame_index:  79%|#######8  | 236/300 [00:41<00:12,  5.23it/s, now=None]
+frame_index:  79%|#######9  | 237/300 [00:41<00:11,  5.28it/s, now=None]
+frame_index:  79%|#######9  | 238/300 [00:41<00:11,  5.31it/s, now=None]
+frame_index:  80%|#######9  | 239/300 [00:41<00:11,  5.39it/s, now=None]
+frame_index:  80%|########  | 240/300 [00:41<00:10,  5.67it/s, now=None]
+frame_index:  80%|########  | 241/300 [00:42<00:11,  5.30it/s, now=None]
+frame_index:  81%|########  | 242/300 [00:42<00:10,  5.66it/s, now=None]
+frame_index:  81%|########1 | 243/300 [00:42<00:09,  5.82it/s, now=None]
+frame_index:  81%|########1 | 244/300 [00:42<00:10,  5.49it/s, now=None]
+frame_index:  82%|########1 | 245/300 [00:42<00:09,  5.61it/s, now=None]
+frame_index:  82%|########2 | 246/300 [00:42<00:09,  5.93it/s, now=None]
+frame_index:  82%|########2 | 247/300 [00:43<00:08,  6.22it/s, now=None]
+frame_index:  83%|########2 | 248/300 [00:43<00:08,  6.39it/s, now=None]
+frame_index:  83%|########2 | 249/300 [00:43<00:08,  6.04it/s, now=None]
+frame_index:  83%|########3 | 250/300 [00:43<00:08,  5.63it/s, now=None]
+frame_index:  84%|########3 | 251/300 [00:43<00:08,  5.63it/s, now=None]
+frame_index:  84%|########4 | 252/300 [00:43<00:08,  5.53it/s, now=None]
+frame_index:  84%|########4 | 253/300 [00:44<00:08,  5.52it/s, now=None]
+frame_index:  85%|########4 | 254/300 [00:44<00:08,  5.66it/s, now=None]
+frame_index:  85%|########5 | 255/300 [00:44<00:08,  5.62it/s, now=None]
+frame_index:  85%|########5 | 256/300 [00:44<00:08,  5.46it/s, now=None]
+frame_index:  86%|########5 | 257/300 [00:44<00:07,  5.56it/s, now=None]
+frame_index:  86%|########6 | 258/300 [00:45<00:07,  5.50it/s, now=None]
+frame_index:  86%|########6 | 259/300 [00:45<00:07,  5.59it/s, now=None]
+frame_index:  87%|########6 | 260/300 [00:45<00:06,  5.74it/s, now=None]
+frame_index:  87%|########7 | 261/300 [00:45<00:06,  6.00it/s, now=None]
+frame_index:  87%|########7 | 262/300 [00:45<00:06,  6.10it/s, now=None]
+frame_index:  88%|########7 | 263/300 [00:45<00:06,  6.03it/s, now=None]
+frame_index:  88%|########8 | 264/300 [00:45<00:06,  5.95it/s, now=None]
+frame_index:  88%|########8 | 265/300 [00:46<00:05,  5.95it/s, now=None]
+frame_index:  89%|########8 | 266/300 [00:46<00:05,  6.09it/s, now=None]
+frame_index:  89%|########9 | 267/300 [00:46<00:05,  6.11it/s, now=None]
+frame_index:  89%|########9 | 268/300 [00:46<00:05,  6.15it/s, now=None]
+frame_index:  90%|########9 | 269/300 [00:46<00:05,  6.14it/s, now=None]
+frame_index:  90%|######### | 270/300 [00:46<00:05,  5.91it/s, now=None]
+frame_index:  90%|######### | 271/300 [00:47<00:04,  6.01it/s, now=None]
+frame_index:  91%|######### | 272/300 [00:47<00:04,  5.86it/s, now=None]
+frame_index:  91%|#########1| 273/300 [00:47<00:04,  5.43it/s, now=None]
+frame_index:  91%|#########1| 274/300 [00:47<00:04,  5.26it/s, now=None]
+frame_index:  92%|#########1| 275/300 [00:47<00:04,  5.33it/s, now=None]
+frame_index:  92%|#########2| 276/300 [00:48<00:04,  5.40it/s, now=None]
+frame_index:  92%|#########2| 277/300 [00:48<00:04,  5.17it/s, now=None]
+frame_index:  93%|#########2| 278/300 [00:48<00:04,  5.33it/s, now=None]
+frame_index:  93%|#########3| 279/300 [00:48<00:03,  5.40it/s, now=None]
+frame_index:  93%|#########3| 280/300 [00:48<00:03,  5.43it/s, now=None]
+frame_index:  94%|#########3| 281/300 [00:49<00:03,  5.36it/s, now=None]
+frame_index:  94%|#########3| 282/300 [00:49<00:03,  5.46it/s, now=None]
+frame_index:  94%|#########4| 283/300 [00:49<00:03,  5.56it/s, now=None]
+frame_index:  95%|#########4| 284/300 [00:49<00:02,  5.59it/s, now=None]
+frame_index:  95%|#########5| 285/300 [00:49<00:02,  5.59it/s, now=None]
+frame_index:  95%|#########5| 286/300 [00:49<00:02,  5.63it/s, now=None]
+frame_index:  96%|#########5| 287/300 [00:50<00:02,  5.52it/s, now=None]
+frame_index:  96%|#########6| 288/300 [00:50<00:02,  5.43it/s, now=None]
+frame_index:  96%|#########6| 289/300 [00:50<00:01,  5.57it/s, now=None]
+frame_index:  97%|#########6| 290/300 [00:50<00:01,  5.89it/s, now=None]
+frame_index:  97%|#########7| 291/300 [00:50<00:01,  5.00it/s, now=None]
+frame_index:  97%|#########7| 292/300 [00:51<00:01,  5.07it/s, now=None]
+frame_index:  98%|#########7| 293/300 [00:51<00:01,  5.30it/s, now=None]
+frame_index:  98%|#########8| 294/300 [00:51<00:01,  5.33it/s, now=None]
+frame_index:  98%|#########8| 295/300 [00:51<00:00,  5.71it/s, now=None]
+frame_index:  99%|#########8| 296/300 [00:51<00:00,  5.53it/s, now=None]
+frame_index:  99%|#########9| 297/300 [00:51<00:00,  5.54it/s, now=None]
+frame_index:  99%|#########9| 298/300 [00:52<00:00,  5.46it/s, now=None]
+frame_index: 100%|#########9| 299/300 [00:52<00:00,  5.43it/s, now=None]
+frame_index: 100%|##########| 300/300 [00:52<00:00,  5.46it/s, now=None]
+MoviePy - Done !
+MoviePy - video ready videos\temp_no_audio_221644.mp4
+[2026-03-12 16:47:37 UTC] [EliteVideoAgent] [RAM: 54.5%] [AUDIO] Fusing audio layers via direct FFmpeg...
+[2026-03-12 16:47:37 UTC] [EliteVideoAgent] [RAM: 54.5%] [ERROR] FFmpeg fusion failed: ffmpeg version 7.1-essentials_build-www.gyan.dev Copyright (c) 2000-2024 the FFmpeg developers
+
+  built with gcc 14.2.0 (Rev1, Built by MSYS2 project)
+
+  configuration: --enable-gpl --enable-version3 --enable-static --disable-w32threads --disable-autodetect --enable-fontconfig --enable-iconv --enable-gnutls --enable-libxml2 --enable-gmp --enable-bzlib --enable-lzma --enable-zlib --enable-libsrt --enable-libssh --enable-libzmq --enable-avisynth --enable-sdl2 --enable-libwebp --enable-libx264 --enable-libx265 --enable-libxvid --enable-libaom --enable-libopenjpeg --enable-libvpx --enable-mediafoundation --enable-libass --enable-libfreetype --enable-libfribidi --enable-libharfbuzz --enable-libvidstab --enable-libvmaf --enable-libzimg --enable-amf --enable-cuda-llvm --enable-cuvid --enable-dxva2 --enable-d3d11va --enable-d3d12va --enable-ffnvcodec --enable-libvpl --enable-nvdec --enable-nvenc --enable-vaapi --enable-libgme --enable-libopenmpt --enable-libopencore-amrwb --enable-libmp3lame --enable-libtheora --enable-libvo-amrwbenc --enable-libgsm --enable-libopencore-amrnb --enable-libopus --enable-libspeex --enable-libvorbis --enable-librubberband
+
+  libavutil      59. 39.100 / 59. 39.100
+
+  libavcodec     61. 19.100 / 61. 19.100
+
+  libavformat    61.  7.100 / 61.  7.100
+
+  libavdevice    61.  3.100 / 61.  3.100
+
+  libavfilter    10.  4.100 / 10.  4.100
+
+  libswscale      8.  3.100 /  8.  3.100
+
+  libswresample   5.  3.100 /  5.  3.100
+
+  libpostproc    58.  3.100 / 58.  3.100
+
+Input #0, mov,mp4,m4a,3gp,3g2,mj2, from 'videos\temp_no_audio_221644.mp4':
+
+  Metadata:
+
+    major_brand     : isom
+
+    minor_version   : 512
+
+    compatible_brands: isomiso2avc1mp41
+
+    encoder         : Lavf61.7.100
+
+  Duration: 00:00:10.00, start: 0.000000, bitrate: 910 kb/s
+
+  Stream #0:0[0x1](und): Video: h264 (Constrained Baseline) (avc1 / 0x31637661), yuv420p(progressive), 1080x1920, 908 kb/s, 30 fps, 30 tbr, 15360 tbn (default)
+
+      Metadata:
+
+        handler_name    : VideoHandler
+
+        vendor_id       : [0][0][0][0]
+
+        encoder         : Lavc61.19.100 libx264
+
+[mp3 @ 0000026cdd27fd80] Format mp3 detected only with low score of 1, misdetection possible!
+
+[mp3 @ 0000026cdd27fd80] Failed to find two consecutive MPEG audio frames.
+
+[in#1 @ 0000026cdd284a00] Error opening input: Invalid data found when processing input
+
+Error opening input file voiceovers\voiceover_20260312_214223.mp3.
+
+Error opening input files: Invalid data found when processing input
+
+
+[VERIFICATION] Success! Video ready at: videos\pixar_short_221644.mp4
+                                                                        

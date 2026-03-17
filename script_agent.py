@@ -9,25 +9,28 @@ def generate_script_with_ollama(topic_dict):
     """Generate a high-retention 60-90 word motivational script using local Llama3."""
     title = topic_dict.get("title", "Discipline")
     
-    prompt = f"""You are a professional cinematic animation director and AI storyteller. Write a powerful, punchy motivational script (1-2 sentences total) about: {title}
+    prompt = f"""
+    Act as a Principal Viral Script Strategist. 
+    Your goal is 100% retention for a 15-30 second YouTube Short about: {title}.
     
-    OUTPUT FORMAT - EVERY SCENE MUST FOLLOW THIS STRUCTURE EXACTLY:
-    Scene [Number]
-    Environment: [specific 3D location, e.g., rainy city alley at night, glowing modern office]
-    Character Action: [Action ONLY: Walk, Sit, Talk, Stand, Gesture, Blink, Reactive Movement]
-    Emotion: [Mood ONLY: Sad, Hope, Success, Determined, Thinking, Smiling]
-    Camera: [Movement ONLY: Slow Zoom, Tracking Shot, Low Angle, Face Close-up]
-    Subtitle: [1-5 words max, bold impact text]
-    Narrative: [the spoken dialogue, 10-15 words per scene]
+    CORE THEMES (PICK THE MOST RELEVANT):
+    - WEALTH: Millionaire habits, money rules.
+    - AI: Job replacement, future tech secrets.
+    - LUXURY: High-status psychology, billionaire routines.
+    - CURIOSITY: Mind-blowing facts, hidden truths.
     
-    STRICT RULES:
-    - Generate exactly 3-4 scenes.
-    - Total duration: 15-20 seconds.
-    - Script length: 1-2 sentences total for the entire short.
-    - Hook: Scene 1 must be a high-impact visual and vocal hook.
-    - Character Actions: Include blinking and reactive movements.
-    - Subtitles: ALL CAPS, punchy.
-    - Do NOT add any preamble, explanation, or notes. Output the raw scene data only."""
+    STRUCTURE (MANDATORY):
+    1. THE HOOK (0-2s): Max 7 words. Must be a "Pattern Interrupt" (Shock or Curiosity).
+    2. THE AGITATION (2-10s): Increase tension and urgency.
+    3. THE PAYOFF (10-25s): Reveal the insight or counter-intuitive truth.
+    4. THE END LINE (Last 2s): Strong, punchy closing thought.
+    
+    STYLE RULES:
+    - Sentence length: MAX 7 words. 
+    - Rhythm: Punchy. Fast-paced. Emotional.
+    - Output ONLY the spoken words. 
+    - NO STAGE DIRECTIONS. NO LABELS like 'Hook:' or 'Payoff:'.
+    """
 
     url = "http://localhost:11434/api/generate"
     payload = {

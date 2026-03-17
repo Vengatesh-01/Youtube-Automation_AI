@@ -29,8 +29,9 @@ def parse_prompts_from_script(script_file):
     with open(script_file, "r", encoding="utf-8") as f:
         lines = f.readlines()
         for line in lines:
-            if line.startswith("Environment:"):
-                p = line.split("Environment:")[1].strip()
+            trimmed = line.strip()
+            if trimmed.lower().startswith("environment:"):
+                p = trimmed.split(":", 1)[1].strip()
                 prompts.append(p)
     return prompts
 
@@ -125,5 +126,73 @@ def run_daily_batch():
 
     log_batch("Daily batch process complete.")
 
+def run_single_script(script_file, topic_title="Custom Short"):
+    log_batch(f"Starting single short process for: {topic_title}...")
+    
+    script_file_path = os.path.abspath(script_file)
+    voice_file = None
+    video_segments = []
+    final_video = None
+
+    try:
+        # Step B: Voiceover
+        voice_file = generate_voice(script_file_path)
+        
+        # Step C: Local Animation Segments (ComfyUI)
+        segments_dir = os.path.abspath("outputs/segments")
+        os.makedirs(segments_dir, exist_ok=True)
+        
+        key_prompts = parse_prompts_from_script(script_file_path)
+        log_batch(f"DEBUG: Found {len(key_prompts)} prompts in script.")
+        
+        if not key_prompts and "overcoming_guilt.txt" in os.path.basename(script_file_path).lower():
+            log_batch("DEBUG: Triggering hardcoded prompts for overcoming_guilt.txt")
+            key_prompts = [
+                "Professional woman with grey hair and glasses walking in a blurred park, blinking and looking thoughtful. High detailed 3D Pixar style.",
+                "The woman stops walking and looks at the camera with a gentle expression, blinking naturally.",
+                "The woman sits on a park bench, looking up at the sky with a reflective pose.",
+                "Close up of the woman's face, blinking and then smiling slightly as if realizing something brave.",
+                "The woman looks around the beautiful park environment, watching birds or leaves, acting alive and reactive.",
+                "The woman stands up from the bench, brushing off her suit, preparing to move forward.",
+                "The woman smiles warmly, walking towards the camera with a confident stride.",
+                "The woman pauses, looks directly at the camera with kindness.",
+                "The woman walks into the distance, looking back once with a peaceful smile and a wave."
+            ]
+
+        log_batch(f"Generating {len(key_prompts)} local animation segments...")
+        for j, p in enumerate(key_prompts):
+            seg_path = os.path.join(segments_dir, f"custom_seg_{j+1}.mp4")
+            log_batch(f"DEBUG: Calling generate_local_animation for segment {j+1} -> {seg_path}")
+            result = generate_local_animation(p, seg_path)
+            if result and os.path.exists(seg_path):
+                log_batch(f"DEBUG: Segment {j+1} generated successfully: {seg_path}")
+                video_segments.append(seg_path)
+            else:
+                log_batch(f"DEBUG: Segment {j+1} generation FAILED or file missing.")
+
+        log_batch(f"DEBUG: Final video_segments list: {video_segments}")
+        
+        if not video_segments:
+             raise Exception("No video segments were successfully generated.")
+
+        # Step D: Assemble in Blender
+        final_video = create_video(script_file_path, voice_file, topic_title, video_segments)
+        
+        if final_video and os.path.exists(final_video):
+            log_batch(f"✅ Final video assembly successful: {final_video}")
+            return final_video
+        else:
+            raise Exception("Final video assembly failed.")
+
+    except Exception as e:
+        log_batch(f"❌ Error in custom short: {e}")
+        return None
+
 if __name__ == "__main__":
-    run_daily_batch()
+    import sys
+    if len(sys.argv) > 1:
+        script_path = sys.argv[1]
+        title = sys.argv[2] if len(sys.argv) > 2 else "Custom Short"
+        run_single_script(script_path, title)
+    else:
+        run_daily_batch()

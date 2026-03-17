@@ -1,0 +1,148 @@
+{
+  "input": {
+    "required": {
+      "model": [
+        "COMBO",
+        {
+          "multiselect": false,
+          "options": [
+            "LTX-2 (Pro)",
+            "LTX-2 (Fast)"
+          ]
+        }
+      ],
+      "prompt": [
+        "STRING",
+        {
+          "default": "",
+          "multiline": true
+        }
+      ],
+      "duration": [
+        "COMBO",
+        {
+          "default": 8,
+          "multiselect": false,
+          "options": [
+            6,
+            8,
+            10,
+            12,
+            14,
+            16,
+            18,
+            20
+          ]
+        }
+      ],
+      "resolution": [
+        "COMBO",
+        {
+          "multiselect": false,
+          "options": [
+            "1920x1080",
+            "2560x1440",
+            "3840x2160"
+          ]
+        }
+      ],
+      "fps": [
+        "COMBO",
+        {
+          "default": 25,
+          "multiselect": false,
+          "options": [
+            25,
+            50
+          ]
+        }
+      ]
+    },
+    "optional": {
+      "generate_audio": [
+        "BOOLEAN",
+        {
+          "tooltip": "When true, the generated video will include AI-generated audio matching the scene.",
+          "advanced": true,
+          "default": false
+        }
+      ]
+    },
+    "hidden": {
+      "auth_token_comfy_org": [
+        "AUTH_TOKEN_COMFY_ORG"
+      ],
+      "api_key_comfy_org": [
+        "API_KEY_COMFY_ORG"
+      ],
+      "unique_id": [
+        "UNIQUE_ID"
+      ]
+    }
+  },
+  "input_order": {
+    "required": [
+      "model",
+      "prompt",
+      "duration",
+      "resolution",
+      "fps"
+    ],
+    "optional": [
+      "generate_audio"
+    ],
+    "hidden": [
+      "auth_token_comfy_org",
+      "api_key_comfy_org",
+      "unique_id"
+    ]
+  },
+  "is_input_list": false,
+  "output": [
+    "VIDEO"
+  ],
+  "output_is_list": [
+    false
+  ],
+  "output_name": [
+    "VIDEO"
+  ],
+  "output_tooltips": [
+    null
+  ],
+  "output_matchtypes": null,
+  "name": "LtxvApiTextToVideo",
+  "display_name": "LTXV Text To Video",
+  "description": "Professional-quality videos with customizable duration and resolution.",
+  "python_module": "comfy_api_nodes.nodes_ltxv",
+  "category": "api node/video/LTXV",
+  "output_node": false,
+  "deprecated": false,
+  "experimental": false,
+  "dev_only": false,
+  "api_node": true,
+  "price_badge": {
+    "engine": "jsonata",
+    "depends_on": {
+      "widgets": [
+        {
+          "name": "model",
+          "type": "COMBO"
+        },
+        {
+          "name": "duration",
+          "type": "COMBO"
+        },
+        {
+          "name": "resolution",
+          "type": "COMBO"
+        }
+      ],
+      "inputs": [],
+      "input_groups": []
+    },
+    "expr": "\n    (\n      $prices := {\n        \"ltx-2 (pro)\": {\"1920x1080\":0.06,\"2560x1440\":0.12,\"3840x2160\":0.24},\n        \"ltx-2 (fast)\": {\"1920x1080\":0.04,\"2560x1440\":0.08,\"3840x2160\":0.16}\n      };\n      $modelPrices := $lookup($prices, $lowercase(widgets.model));\n      $pps := $lookup($modelPrices, widgets.resolution);\n      {\"type\":\"usd\",\"usd\": $pps * widgets.duration}\n    )\n    "
+  },
+  "search_aliases": null,
+  "essentials_category": null
+}

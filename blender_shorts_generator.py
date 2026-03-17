@@ -1,121 +1,94 @@
 import bpy
+import json
 import os
-import sys
 import math
 import random
-import traceback
 
-# ─────────────────────────────────────────────
-# 0. CONFIGURATION
-# ─────────────────────────────────────────────
+# CONFIG
 VOICE_FILE  = os.environ.get("SHORTS_AUDIO",  "")
 TOPIC_TITLE = os.environ.get("SHORTS_TOPIC",  "Never Give Up")
 OUTPUT_PATH = os.environ.get("SHORTS_OUTPUT", "outputs/final_short.mp4")
-VIDEO_SEGMENTS = os.environ.get("VIDEO_SEGMENTS", "").split(",") # Paths to ComfyUI segments
+CHARACTER_BLEND = "assets/character.blend"
 
-FPS          = 30
-TEMPLATE_PATH = "assets/shorts_template.blend" # Reusable template
+def setup_scene():
+    scene = bpy.context.scene
+    scene.render.resolution_x = 1080
+    scene.render.resolution_y = 1920
+    scene.render.fps = 24
+    scene.render.engine = 'BLENDER_EEVEE_NEXT' if bpy.app.version >= (4, 1) else 'BLENDER_EEVEE'
+    if hasattr(scene, "eevee"):
+        scene.eevee.taa_render_samples = 12
 
-os.makedirs(os.path.dirname(OUTPUT_PATH) if os.path.dirname(OUTPUT_PATH) else "outputs", exist_ok=True)
-
-def log(msg):
-    print(f"[BLENDER_ASSEMBLY] {msg}", flush=True)
-
-# ─────────────────────────────────────────────
-# 1. LOAD TEMPLATE & SETUP
-# ─────────────────────────────────────────────
-# This script is designed to be run as: blender -b [TEMPLATE] -P blender_shorts_generator.py
-log("Setting up assembly scene...")
-scene = bpy.context.scene
-scene.render.resolution_x = 1080
-scene.render.resolution_y = 1920
-scene.render.fps = FPS
-
-# Setup Sequencer
-if not scene.sequence_editor:
-    scene.sequence_editor_create()
-else:
-    # Clear existing strips
-    for s in list(scene.sequence_editor.sequences):
-        scene.sequence_editor.sequences.remove(s)
-
-# ─────────────────────────────────────────────
-# 2. IMPORT SEGMENTS & AUDIO
-# ─────────────────────────────────────────────
-current_frame = 1
-
-# Add Audio
-if VOICE_FILE and os.path.exists(VOICE_FILE):
-    log(f"Adding audio: {VOICE_FILE}")
-    try:
-        audio_strip = scene.sequence_editor.sequences.new_sound(
-            name="Voiceover",
-            filepath=os.path.abspath(VOICE_FILE),
-            channel=1,
-            frame_start=1
-        )
-        total_duration = audio_strip.frame_final_end
-        scene.frame_end = total_duration
-    except Exception as e:
-        log(f"Audio error: {e}")
-
-# Add Video Segments (from ComfyUI)
-log(f"Assembling {len(VIDEO_SEGMENTS)} segments...")
-for seg_path in VIDEO_SEGMENTS:
-    if not seg_path or not os.path.exists(seg_path):
-        log(f"Skipping missing segment: {seg_path}")
-        continue
+def animate_character(total_frames):
+    head = bpy.data.objects.get("Head")
+    armature = bpy.data.objects.get("CharacterArmature")
     
-    try:
-        vid_strip = scene.sequence_editor.sequences.new_movie(
-            name=os.path.basename(seg_path),
-            filepath=os.path.abspath(seg_path),
-            channel=2,
-            frame_start=current_frame
-        )
-        # Ensure it fits the vertical aspect
-        vid_strip.transform.scale_x = 1.0
-        vid_strip.transform.scale_y = 1.0
-        current_frame = vid_strip.frame_final_end
-        log(f"  + Added {seg_path} starts at {vid_strip.frame_start}")
-    except Exception as e:
-        log(f"Segment import error ({seg_path}): {e}")
+    if head and head.data.shape_keys:
+        blink_key = head.data.shape_keys.key_blocks.get("Blink")
+        if blink_key:
+            f = 10
+            while f < total_frames:
+                blink_key.value = 0.0
+                blink_key.keyframe_insert(data_path="value", frame=f)
+                blink_key.value = 1.0
+                blink_key.keyframe_insert(data_path="value", frame=f+2)
+                blink_key.value = 0.0
+                blink_key.keyframe_insert(data_path="value", frame=f+4)
+                f += random.randint(48, 120)
 
-# Update frame end if no audio
-if not VOICE_FILE:
-    scene.frame_end = current_frame
+    if armature:
+        armature.keyframe_delete(data_path="rotation_euler")
+        for f in range(1, total_frames, 5):
+            twitch = random.uniform(-0.005, 0.005) if random.random() > 0.9 else 0
+            armature.rotation_euler[2] = math.sin(f * 0.05) * 0.02 + twitch
+            armature.keyframe_insert(data_path="rotation_euler", frame=f, index=2)
+            armature.rotation_euler[0] = math.sin(f * 0.03) * 0.01
+            armature.keyframe_insert(data_path="rotation_euler", frame=f, index=0)
 
-# ─────────────────────────────────────────────
-# 3. OVERLAYS (Title & Captions)
-# ─────────────────────────────────────────────
-# We can add 3D overlays from the template here
-for obj in bpy.data.objects:
-    if "Title" in obj.name:
-        obj.hide_render = False
-        if hasattr(obj.data, "body"):
+def animate_camera(total_frames):
+    cam = bpy.data.objects.get("Camera")
+    if not cam: return
+    cam_data = cam.data
+    f = 1
+    while f < total_frames:
+        interval = random.randint(100, 180)
+        f += interval
+        if f >= total_frames: break
+        choice = random.choice([0, 1, 2])
+        y_pos, fov = (-8.0, 50) if choice == 0 else ((-5.8, 42) if choice == 1 else (-9.5, 65))
+        cam.location[1] = y_pos
+        cam_data.lens = fov
+        cam.keyframe_insert(data_path="location", frame=f, index=1)
+        cam_data.keyframe_insert(data_path="lens", frame=f)
+        for fc in cam.animation_data.action.fcurves:
+            if fc.data_path == "location": fc.keyframe_points[-1].interpolation = 'CONSTANT'
+
+def run_assembly():
+    setup_scene()
+    if VOICE_FILE and os.path.exists(VOICE_FILE):
+        if not bpy.context.scene.sequence_editor: bpy.context.scene.sequence_editor_create()
+        audio_strip = bpy.context.scene.sequence_editor.sequences.new_sound("Voice", VOICE_FILE, 3, 1)
+        total_frames = audio_strip.frame_final_end
+        bpy.context.scene.frame_end = total_frames
+    else:
+        total_frames = 24 * 15
+        bpy.context.scene.frame_end = total_frames
+
+    animate_character(total_frames)
+    animate_camera(total_frames)
+
+    # Overlays
+    for obj in bpy.data.objects:
+        if "Title" in obj.name and hasattr(obj.data, "body"):
             obj.data.body = TOPIC_TITLE.upper()
 
-# ─────────────────────────────────────────────
-# 4. RENDER FINAL
-# ─────────────────────────────────────────────
-log("Configuring final output...")
-# Fallback logic for local environment without FFMPEG
-try:
-    scene.render.image_settings.file_format = 'FFMPEG'
-    scene.render.ffmpeg.format = 'MPEG4'
-    scene.render.ffmpeg.codec = 'H264'
-    scene.render.ffmpeg.audio_codec = 'AAC'
-    log("Set format to FFMPEG (MP4)")
-except:
-    log("FFMPEG failed, falling back to AVI_JPEG")
-    scene.render.image_settings.file_format = 'AVI_JPEG'
-
-scene.render.filepath = os.path.abspath(OUTPUT_PATH)
-
-log(f"🎬 Rendering final short to: {scene.render.filepath}")
-try:
+    bpy.context.scene.render.filepath = os.path.abspath(OUTPUT_PATH)
+    bpy.context.scene.render.image_settings.file_format = 'FFMPEG'
+    bpy.context.scene.render.ffmpeg.format = 'MPEG4'
+    bpy.context.scene.render.ffmpeg.codec = 'H264'
+    bpy.context.scene.render.ffmpeg.audio_codec = 'AAC'
+    
     bpy.ops.render.render(animation=True)
-    log("✅ Rendering complete!")
-except Exception as e:
-    log(f"❌ Render failed: {e}")
-    sys.exit(1)
+
+if __name__ == "__main__":
+    run_assembly()
