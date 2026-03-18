@@ -79,20 +79,21 @@ def animate_character(head_obj, armature, total_frames):
                 f += random.randint(60, 144) # 2.5 - 6 seconds @ 24fps
 
     # 2. 👁️ Micro-Eye Saccades (via small head twitches)
-    # 3. 🌊 IDLE SWAY (Organic Drift)
+    # 3. 🌊 IDLE SWAY & BREATHING (Organic Drift)
     if armature:
         armature.keyframe_delete(data_path="rotation_euler")
         armature.keyframe_delete(data_path="location")
         for f in range(1, total_frames, 5):
             # Sway + Twitch
-            twitch = random.uniform(-0.005, 0.005) if random.random() > 0.9 else 0
+            twitch = random.uniform(-0.005, 0.005) if random.random() > 0.92 else 0
             armature.rotation_euler[2] = math.sin(f * 0.05) * 0.02 + twitch
             armature.keyframe_insert(data_path="rotation_euler", frame=f, index=2)
             
             armature.rotation_euler[0] = math.sin(f * 0.03) * 0.01
             armature.keyframe_insert(data_path="rotation_euler", frame=f, index=0)
             
-            armature.location[2] = math.sin(f * 0.08) * 0.005
+            # Breathing (Z-oscillation)
+            armature.location[2] = math.sin(f * 0.1) * 0.008 
             armature.keyframe_insert(data_path="location", frame=f, index=2)
 
 def animate_camera(total_frames):
@@ -109,6 +110,11 @@ def animate_camera(total_frames):
     cam.keyframe_insert(data_path="location", frame=1, index=1)
     cam_data.lens = 50
     cam_data.keyframe_insert(data_path="lens", frame=1)
+
+    # 🎬 CINEMATIC DEPTH OF FIELD
+    cam_data.dof.use_dof = True
+    cam_data.dof.focus_distance = 6.0
+    cam_data.dof.aperture_fstop = 1.8
 
     # Jump Cuts
     f = 1
@@ -171,6 +177,12 @@ def run_render(audio_path, blend_path, lipsync_path, output_video):
         tex.image = bpy.data.images.load(os.path.abspath("inputs/background.png"))
         mat.node_tree.links.new(tex.outputs[0], bsdf.inputs["Base Color"])
         bg.data.materials.append(mat)
+
+        # ✨ DYNAMIC BACKGROUND MOTION (Slow Pan)
+        bg.location[0] = -2
+        bg.keyframe_insert(data_path="location", frame=1, index=0)
+        bg.location[0] = 2
+        bg.keyframe_insert(data_path="location", frame=total_frames, index=0)
     
     if not bpy.context.scene.sequence_editor:
         bpy.context.scene.sequence_editor_create()

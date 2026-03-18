@@ -5,15 +5,16 @@ import os
 import uuid
 
 COMFY_URL = "http://127.0.0.1:8188/generate"
+FIXED_SEED = 42  # For Sasuke/Naruto character consistency
 
 def generate_content(prompt, output_path, type="character"):
     """
     Generates character front/side views or background images.
     """
     if type == "character_front":
-        full_prompt = f"{prompt}, front view portrait, t-pose or a-pose, professional character design, 3D Pixar style, cinematic lighting, neutral expression, white background"
+        full_prompt = f"{prompt}, front view portrait, t-pose or a-pose, sharp expressive eyes, small straight nose, defined jawline, thin lips, calm brooding expression, medium-length spiky black hair, anime style Naruto/Sasuke, high-quality character design, 3D Pixar style, cinematic lighting, white background"
     elif type == "character_side":
-        full_prompt = f"{prompt}, side view profile, professional character design, 3D Pixar style, cinematic lighting, neutral expression, white background"
+        full_prompt = f"{prompt}, side view profile, sharp expressive eyes, small straight nose, defined jawline, thin lips, calm brooding expression, medium-length spiky black hair, anime style Naruto/Sasuke, high-quality character design, 3D Pixar style, cinematic lighting, white background"
     elif type == "background":
         full_prompt = f"{prompt}, cinematic background, 3D animated style, vibrant colors, wide angle, 16:9, matching Pixar style"
     else:
@@ -23,7 +24,8 @@ def generate_content(prompt, output_path, type="character"):
         "prompt": full_prompt,
         "width": 1024,
         "height": 1024,
-        "steps": 30
+        "steps": 30,
+        "seed": FIXED_SEED
     }
 
     try:
