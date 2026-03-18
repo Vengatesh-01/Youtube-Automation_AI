@@ -75,11 +75,64 @@ def run_production_pipeline(topic):
         audio_file, MODEL_CHARACTER, lipsync_file, video_file
     ]
     
+    blender_ok = False
     try:
-        subprocess.run(cmd, check=True)
-        print(f"✅ RENDER COMPLETE: {video_file}")
+        result = subprocess.run(cmd, capture_output=False, timeout=600)
+        blender_ok = (result.returncode == 0) and os.path.exists(video_file) and os.path.getsize(video_file) > 10000
+        if blender_ok:
+            print(f"✅ RENDER COMPLETE: {video_file}")
+        else:
+            print(f"⚠️ Blender render produced no valid output (returncode={result.returncode})")
     except Exception as e:
         print(f"❌ Blender Render Failed: {e}")
+
+    # 3b. FFMPEG FALLBACK — assemble video from still image + audio
+    if not blender_ok:
+        print("🔄 Falling back to FFmpeg still-image video assembly...")
+        ffmpeg_exe = shutil.which("ffmpeg") or "ffmpeg"
+        still_image = None
+        for candidate in ["inputs/style_front.png", "inputs/background.png", "assets/default_char.png"]:
+            if os.path.exists(candidate):
+                still_image = os.path.abspath(candidate)
+                break
+
+        # If no image, generate a solid-color placeholder
+        if not still_image:
+            try:
+                from PIL import Image, ImageDraw, ImageFont
+                w, h = 1080, 1920
+                img = Image.new("RGB", (w, h), (15, 10, 30))  # Dark navy background
+                draw = ImageDraw.Draw(img)
+                draw.rectangle([(w//4, h//4), (3*w//4, 3*h//4)], outline=(120, 200, 255), width=4)
+                draw.text((w//2, h//2), "🎭", anchor="mm", fill=(200, 200, 255))
+                placeholder_path = "outputs/placeholder_char.png"
+                img.save(placeholder_path)
+                still_image = os.path.abspath(placeholder_path)
+                print(f"🖼️ Generated placeholder image: {placeholder_path}")
+            except Exception as e:
+                print(f"⚠️ Could not generate placeholder: {e}")
+
+        if still_image and os.path.exists(audio_file):
+            ffmpeg_cmd = [
+                ffmpeg_exe, "-y",
+                "-loop", "1", "-i", still_image,
+                "-i", os.path.abspath(audio_file),
+                "-c:v", "libx264", "-tune", "stillimage",
+                "-c:a", "aac", "-b:a", "192k",
+                "-pix_fmt", "yuv420p",
+                "-vf", "scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2",
+                "-shortest",
+                video_file
+            ]
+            try:
+                subprocess.run(ffmpeg_cmd, check=True, timeout=120)
+                if os.path.exists(video_file):
+                    print(f"✅ FFmpeg fallback video created: {video_file}")
+                    blender_ok = True
+            except Exception as e:
+                print(f"❌ FFmpeg fallback also failed: {e}")
+        elif not still_image:
+            print("❌ No image available for FFmpeg fallback.")
         
     # 4. YOUTUBE UPLOAD (Step 9)
     print("📺 Uploading to YouTube...")
