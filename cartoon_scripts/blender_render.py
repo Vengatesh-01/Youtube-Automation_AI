@@ -147,54 +147,78 @@ def animate_camera(total_frames):
                 fc.keyframe_points[-1].interpolation = 'CONSTANT'
 
 def run_render(audio_path, blend_path, lipsync_path, output_video):
-    setup_scene()
-    # character_v2.blend has CharacterMesh and CharacterRig
-    bpy.ops.wm.open_mainfile(filepath=blend_path)
-    head = bpy.data.objects.get("CharacterMesh")
-    armature = bpy.data.objects.get("CharacterRig")
-    if not head: return
+    import sys
     
-    total_frames = 24 * 30 
+    # 1. Load the character blend file FIRST
+    if os.path.exists(blend_path):
+        print(f"📂 Opening blend: {blend_path}")
+        bpy.ops.wm.open_mainfile(filepath=blend_path)
+    else:
+        print(f"⚠️ Blend file not found: {blend_path}. Using default scene.")
+
+    # 2. Setup scene AFTER loading (otherwise settings get wiped)
+    setup_scene()
+    
+    # 3. Identify character mesh and armature
+    head = (bpy.data.objects.get("CharacterMesh") or 
+            bpy.data.objects.get("Character_Mesh") or
+            bpy.data.objects.get("Mesh"))
+    armature = (bpy.data.objects.get("CharacterRig") or 
+                bpy.data.objects.get("Character_Armature") or
+                bpy.data.objects.get("Armature"))
+
+    if not head:
+        print("⚠️ No character mesh found. Rendering scene as-is.")
+    
+    total_frames = 24 * 30
+    bpy.context.scene.frame_start = 1
     bpy.context.scene.frame_end = total_frames
     
-    apply_lipsync(head, lipsync_path)
+    # 4. Apply animations (safe even if head/armature is None)
+    if lipsync_path and os.path.exists(lipsync_path) and head:
+        apply_lipsync(head, lipsync_path)
     animate_character(head, armature, total_frames)
     animate_camera(total_frames)
-    
-    # 5. Background & World
+
+    # 5. Load background image if available
     if os.path.exists("inputs/background.png"):
-        # Create background plane
         bpy.ops.mesh.primitive_plane_add(size=20, location=(0, 5, 5))
         bg = bpy.context.object
         bg.rotation_euler[0] = math.radians(90)
         bg.name = "Background_Plane"
-        
         mat = bpy.data.materials.new(name="Background_Mat")
         mat.use_nodes = True
         nodes = mat.node_tree.nodes
         bsdf = nodes.get("Principled BSDF")
         tex = nodes.new("ShaderNodeTexImage")
         tex.image = bpy.data.images.load(os.path.abspath("inputs/background.png"))
-        mat.node_tree.links.new(tex.outputs[0], bsdf.inputs["Base Color"])
+        if bsdf:
+            mat.node_tree.links.new(tex.outputs[0], bsdf.inputs["Base Color"])
         bg.data.materials.append(mat)
-
-        # ✨ DYNAMIC BACKGROUND MOTION (Slow Pan)
         bg.location[0] = -2
         bg.keyframe_insert(data_path="location", frame=1, index=0)
         bg.location[0] = 2
         bg.keyframe_insert(data_path="location", frame=total_frames, index=0)
-    
-    if not bpy.context.scene.sequence_editor:
-        bpy.context.scene.sequence_editor_create()
-    bpy.context.scene.sequence_editor.sequences.new_sound("Audio", audio_path, 3, 1)
 
-    bpy.context.scene.render.filepath = output_video
+    # 6. Audio strip
+    audio_abs = os.path.abspath(audio_path) if audio_path and os.path.exists(audio_path) else None
+    if audio_abs:
+        if not bpy.context.scene.sequence_editor:
+            bpy.context.scene.sequence_editor_create()
+        bpy.context.scene.sequence_editor.sequences.new_sound("Audio", audio_abs, 3, 1)
+
+    # 7. Render output
+    output_video_abs = os.path.abspath(output_video)
+    bpy.context.scene.render.filepath = output_video_abs
     bpy.context.scene.render.image_settings.file_format = 'FFMPEG'
     bpy.context.scene.render.ffmpeg.format = 'MPEG4'
     bpy.context.scene.render.ffmpeg.codec = 'H264'
     bpy.context.scene.render.ffmpeg.audio_codec = 'AAC'
+    bpy.context.scene.render.ffmpeg.audio_bitrate = 192
     
+    print(f"🎬 Starting render → {output_video_abs}")
     bpy.ops.render.render(animation=True)
+    print(f"✅ Render complete: {output_video_abs}")
 
 if __name__ == "__main__":
     import sys

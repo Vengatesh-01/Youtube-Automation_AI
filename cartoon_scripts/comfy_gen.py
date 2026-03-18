@@ -11,12 +11,31 @@ def generate_content(prompt, output_path, type="character"):
     """
     Generates character front/side views or background images.
     """
+    # 🎭 FRONT VIEW: Full specification for rigging-ready anime character
+    CHAR_BASE = (
+        "ninja-style outfit simple for animation optional forehead headband, "
+        "sharp expressive eyes with detailed irises and pupils for emotion, "
+        "small straight nose, defined jawline, thin lips, calm brooding expression, "
+        "medium-length spiky black hair with natural flow, anime Sasuke Uchiha style, "
+        "high-resolution PNG ready for Blender UV mapping, "
+        "neutral lighting soft shadows minimal cinematic effect, "
+        "transparent or pure white background, rigging-ready character design"
+    )
     if type == "character_front":
-        full_prompt = f"{prompt}, front view portrait, t-pose or a-pose, sharp expressive eyes, small straight nose, defined jawline, thin lips, calm brooding expression, medium-length spiky black hair, anime style Naruto/Sasuke, high-quality character design, 3D Pixar style, cinematic lighting, white background"
+        full_prompt = (
+            f"{prompt}, FRONT VIEW portrait, A-pose or T-pose, {CHAR_BASE}, "
+            "face symmetrical for blend shape morphs, supports lip-sync phonemes (AI E O U MBP FV), "
+            "supports blinking and eye saccade shapes, facial expressions smile frown neutral, "
+            "ultra detailed 4K anime illustration"
+        )
     elif type == "character_side":
-        full_prompt = f"{prompt}, side view profile, sharp expressive eyes, small straight nose, defined jawline, thin lips, calm brooding expression, medium-length spiky black hair, anime style Naruto/Sasuke, high-quality character design, 3D Pixar style, cinematic lighting, white background"
+        full_prompt = (
+            f"{prompt}, EXACT SIDE VIEW 90-degree profile, {CHAR_BASE}, "
+            "shows ear and side hair detail, consistent with front view character, "
+            "ultra detailed 4K anime illustration"
+        )
     elif type == "background":
-        full_prompt = f"{prompt}, cinematic background, 3D animated style, vibrant colors, wide angle, 16:9, matching Pixar style"
+        full_prompt = f"{prompt}, cinematic anime background, vibrant colors, wide angle, 9:16 vertical, Naruto/Sasuke universe aesthetic, village or forest scene"
     else:
         full_prompt = prompt
 
