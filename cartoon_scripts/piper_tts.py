@@ -10,12 +10,13 @@ def text_to_speech(text, output_file="outputs/audio.wav", model_path="assets/pip
     
     # 🕒 VIRAL PACING REFINEMENT
     # Convert '...' into long pauses for dramatic delivery
+    PIPER_EXE = os.environ.get("PIPER_PATH", r"C:\Users\User\Downloads\piper_extracted\piper.exe")
     refined_text = text.replace("...", ", , , ") # Adding virtual commas for Piper to slow down
     refined_text = refined_text.replace(".", ". ").replace("?", "? ").replace("!", "! ")
     
     try:
         process = subprocess.Popen(
-            ['piper', '--model', model_path, '--output_file', output_file],
+            [PIPER_EXE, '--model', model_path, '--output_file', output_file],
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,

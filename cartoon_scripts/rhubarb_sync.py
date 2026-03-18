@@ -12,11 +12,12 @@ def generate_lipsync(audio_file="outputs/audio.wav", output_file="outputs/lipsyn
         return False
         
     try:
-        # Command: rhubarb -f json -o output.json input.wav
+        RHUBARB_PATH = r"C:\Users\User\Downloads\Rhubarb-Lip-Sync-1.14.0-Windows\Rhubarb-Lip-Sync-1.14.0-Windows\rhubarb.exe"
         process = subprocess.run(
-            ['rhubarb', '-f', 'json', '-o', output_file, audio_file],
+            [RHUBARB_PATH, '-f', 'json', '-o', output_file, audio_file],
             capture_output=True,
-            text=True
+            text=True,
+            check=True
         )
 
         # RHUBARB MAPPING FOR CHARACTER_V2.BLEND
