@@ -12,7 +12,11 @@ def generate_lipsync(audio_file="outputs/audio.wav", output_file="outputs/lipsyn
         return False
         
     try:
-        RHUBARB_PATH = r"C:\Users\User\Downloads\Rhubarb-Lip-Sync-1.14.0-Windows\Rhubarb-Lip-Sync-1.14.0-Windows\rhubarb.exe"
+        # 🛠️ DYNAMIC TOOL PATH (Windows local vs Render Linux)
+        RHUBARB_PATH = os.environ.get("RHUBARB_PATH", r"C:\Users\User\Downloads\Rhubarb-Lip-Sync-1.14.0-Windows\Rhubarb-Lip-Sync-1.14.0-Windows\rhubarb.exe")
+        if not os.path.exists(RHUBARB_PATH):
+            RHUBARB_PATH = "rhubarb" # Fallback to PATH (e.g. on Linux/Render)
+            
         process = subprocess.run(
             [RHUBARB_PATH, '-f', 'json', '-o', output_file, audio_file],
             capture_output=True,

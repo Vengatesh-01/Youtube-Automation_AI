@@ -12,7 +12,22 @@ RUN apt-get update && apt-get install -y \
     imagemagick \
     fonts-dejavu-core \
     libespeak-ng1 \
+    blender \
+    curl \
+    unzip \
     && rm -rf /var/lib/apt/lists/*
+
+# 🧠 Install Rhubarb Lip Sync (Linux binary)
+RUN curl -L https://github.com/DanielSWolf/rhubarb-lip-sync/releases/download/v1.14.0/Rhubarb-Lip-Sync-1.14.0-Linux.zip -o rhubarb.zip && \
+    unzip rhubarb.zip -d /opt/rhubarb && \
+    rm rhubarb.zip && \
+    ln -s /opt/rhubarb/rhubarb /usr/local/bin/rhubarb
+
+# 🎙️ Install Piper TTS (Linux binary)
+RUN curl -L https://github.com/rhasspy/piper/releases/download/v1.2.0/piper_linux_x86_64.tar.gz -o piper.tar.gz && \
+    tar -xf piper.tar.gz -C /opt && \
+    rm piper.tar.gz && \
+    ln -s /opt/piper/piper /usr/local/bin/piper
 
 # Fix ImageMagick policy (MoviePy requirement)
 RUN if [ -f /etc/ImageMagick-7/policy.xml ]; then \

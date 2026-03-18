@@ -9,8 +9,11 @@ def text_to_speech(text, output_file="outputs/audio.wav", model_path="assets/pip
         os.makedirs(os.path.dirname(output_file), exist_ok=True)
     
     # 🕒 VIRAL PACING REFINEMENT
-    # Convert '...' into long pauses for dramatic delivery
+    # 🛠️ DYNAMIC TOOL PATH
     PIPER_EXE = os.environ.get("PIPER_PATH", r"C:\Users\User\Downloads\piper_extracted\piper.exe")
+    if not os.path.exists(PIPER_EXE):
+        PIPER_EXE = "piper" # Fallback to PATH (e.g. on Linux/Render)
+        
     refined_text = text.replace("...", ", , , ") # Adding virtual commas for Piper to slow down
     refined_text = refined_text.replace(".", ". ").replace("?", "? ").replace("!", "! ")
     
