@@ -59,3 +59,8 @@ prompts_processed/
 prompts_error/
 daily_status.json
 batch_automation.log
+
+# Allow Cartoon Pipeline
+!cartoon_pipeline.py
+!cartoon_scripts/
+!cartoon_scripts/*.py
