@@ -6,15 +6,22 @@ FROM python:3.11-slim
 # libmagic1: For file type detection
 # imagemagick: For text overlays in moviepy
 # fonts-dejavu: For cross-platform font support
-RUN apt-get update && apt-get install -y \
+# Install system dependencies with robust practices
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
     ffmpeg \
     libmagic1 \
     imagemagick \
     fonts-dejavu-core \
     libespeak-ng1 \
-    blender \
     curl \
     unzip \
+    xz-utils \
+    libgl1-mesa-glx \
+    libxrender1 \
+    libxi6 \
+    libxkbcommon0 \
+    libsm6 \
+    libxext6 \
     && rm -rf /var/lib/apt/lists/*
 
 # 🧠 Install Rhubarb Lip Sync (Linux binary)
@@ -28,6 +35,13 @@ RUN curl -L https://github.com/rhasspy/piper/releases/download/v1.2.0/piper_linu
     tar -xf piper.tar.gz -C /opt && \
     rm piper.tar.gz && \
     ln -s /opt/piper/piper /usr/local/bin/piper
+
+# 🎬 Install Blender 4.2 LTS (Direct Binary)
+RUN curl -L https://mirrors.oia.debian.org/blender/release/Blender4.2/blender-4.2.3-linux-x64.tar.xz -o blender.tar.xz && \
+    mkdir /opt/blender && \
+    tar -xJf blender.tar.xz -C /opt/blender --strip-components=1 && \
+    rm blender.tar.xz && \
+    ln -s /opt/blender/blender /usr/local/bin/blender
 
 # Fix ImageMagick policy (MoviePy requirement)
 RUN if [ -f /etc/ImageMagick-7/policy.xml ]; then \
