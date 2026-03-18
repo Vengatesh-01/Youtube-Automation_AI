@@ -33,7 +33,7 @@ RUN curl -L https://github.com/DanielSWolf/rhubarb-lip-sync/releases/download/v1
     ln -s /opt/rhubarb/rhubarb /usr/local/bin/rhubarb
 
 # 🎙️ Install Piper TTS (Linux binary)
-RUN curl -L https://github.com/rhasspy/piper/releases/download/v1.2.0/piper_linux_x86_64.tar.gz -o piper.tar.gz && \
+RUN curl -L https://github.com/rhasspy/piper/releases/download/2023.11.14-2/piper_linux_x86_64.tar.gz -o piper.tar.gz && \
     tar -xf piper.tar.gz -C /opt && \
     rm piper.tar.gz && \
     ln -s /opt/piper/piper /usr/local/bin/piper
