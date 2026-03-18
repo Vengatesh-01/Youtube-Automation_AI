@@ -52,7 +52,10 @@ INDEX_HTML = """
         <h1>🚀 YouTube Automation</h1>
         <p>Status: <span class="status">Online</span></p>
         <p>Schedule: {{ schedule }}</p>
-        <a href="/run" class="btn">▶ Run Pipeline Now</a>
+        <div style="display: flex; gap: 10px;">
+            <a href="/run" class="btn">▶ Run Standard Pipeline</a>
+            <a href="/cartoon" class="btn" style="background: #2196f3;">🎭 Run Cartoon Pipeline</a>
+        </div>
     </div>
 
     <div class="card">
@@ -91,23 +94,30 @@ def dashboard():
         logs=log_content
     )
 
-@app.route('/run')
-def trigger_pipeline():
-    """Manually trigger the automation pipeline."""
-    log("Web Trigger: Manual pipeline request received.")
-    thread = threading.Thread(target=run_pipeline, daemon=True)
-    thread.start()
-    log(f"Web Trigger: Background thread started. Thread alive: {thread.is_alive()}")
-    return """
-    <html>
-        <body style="font-family: sans-serif; text-align: center; padding: 50px;">
-            <h1>✅ Pipeline Triggered!</h1>
-            <p>The automation is now running in the background.</p>
-            <p><a href="/">Return to Dashboard</a></p>
-            <script>setTimeout(() => { window.location.href = "/"; }, 3000);</script>
-        </body>
-    </html>
     """, 202
+    
+@app.route('/cartoon')
+def trigger_cartoon_pipeline():
+    """Manually trigger the cartoon automation pipeline."""
+    log("Web Trigger: Cartoon pipeline request received.")
+    try:
+        from cartoon_pipeline import run_production_pipeline
+        thread = threading.Thread(target=run_production_pipeline, args=("The 3 AM billionaire routine",), daemon=True)
+        thread.start()
+        log(f"Web Trigger: Cartoon background thread started.")
+        return """
+        <html>
+            <body style="font-family: sans-serif; text-align: center; padding: 50px;">
+                <h1>🎭 Cartoon Pipeline Triggered!</h1>
+                <p>The 3D automation is now running in the background.</p>
+                <p><a href="/">Return to Dashboard</a></p>
+                <script>setTimeout(() => { window.location.href = "/"; }, 3000);</script>
+            </body>
+        </html>
+        """, 202
+    except Exception as e:
+        log(f"❌ Error triggering cartoon pipeline: {e}")
+        return f"Error: {e}", 500
 
 @app.route('/download/<filename>')
 def download_video(filename):
