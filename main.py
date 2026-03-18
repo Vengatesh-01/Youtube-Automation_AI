@@ -94,8 +94,24 @@ def dashboard():
         logs=log_content
     )
 
+@app.route('/run')
+def trigger_pipeline():
+    """Manually trigger the automation pipeline."""
+    log("Web Trigger: Manual pipeline request received.")
+    thread = threading.Thread(target=run_pipeline, daemon=True)
+    thread.start()
+    log(f"Web Trigger: Background thread started. Thread alive: {thread.is_alive()}")
+    return """
+    <html>
+        <body style="font-family: sans-serif; text-align: center; padding: 50px;">
+            <h1>✅ Pipeline Triggered!</h1>
+            <p>The automation is now running in the background.</p>
+            <p><a href="/">Return to Dashboard</a></p>
+            <script>setTimeout(() => { window.location.href = "/"; }, 3000);</script>
+        </body>
+    </html>
     """, 202
-    
+
 @app.route('/cartoon')
 def trigger_cartoon_pipeline():
     """Manually trigger the cartoon automation pipeline."""
