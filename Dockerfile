@@ -1,5 +1,5 @@
-# Use a lightweight Python base
-FROM python:3.11-slim
+# Use a more robust base image to avoid l10n package conflicts
+FROM python:3.11-bookworm
 
 # Install system dependencies
 # ffmpeg: For video processing
