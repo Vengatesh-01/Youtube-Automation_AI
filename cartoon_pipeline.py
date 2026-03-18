@@ -31,7 +31,9 @@ def run_production_pipeline(topic):
     print(f"🚀 INITIALIZING PRODUCTION PIPELINE: {topic}")
     
     # 0. ENSURE CHARACTER PERSISTENCE (Layer 1)
-    if not ensure_character():
+    # Extract a simple character description from the topic or use a default
+    character_desc = f"A cute cartoon character related to {topic}"
+    if not ensure_character(topic=topic, character_desc=character_desc):
         print("❌ CRITICAL: Character identity staging failed.")
         return False
 

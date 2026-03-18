@@ -5,27 +5,25 @@ import subprocess
 # Ensure the root directory is in sys.path to find the scripts package
 sys.path.append(os.getcwd())
 
-from cartoon_scripts.comfy_gen import generate_character_image
+from scripts.comfy_gen import generate_all_assets
 
-PATH_BLENDER = os.environ.get("BLENDER_PATH", r"C:\Program Files\Blender Foundation\Blender 5.0\blender.exe")
+PATH_BLENDER = r"C:\Program Files\Blender Foundation\Blender 5.0\blender.exe"
 ASSET_IMG = "inputs/style_front.png"
 ASSET_BLEND = "work/model/character.blend"
-TEMPLATE_BLEND = "assets/character_v2.blend"
+TEMPLATE_BLEND = "YouTube_Automation_Free/assets/character_v2.blend"
 
-def ensure_character():
-    """Ensures character.blend exists, generating it if necessary."""
+def ensure_character(topic="Entrepreneur", character_desc="A charismatic young entrepreneur"):
+    """Ensures character.blend and background exist, generating them if necessary."""
+    if not os.path.exists(ASSET_IMG) or not os.path.exists("inputs/background.png"):
+        print("🎨 Generating character and background assets from AI...")
+        # If ComfyUI fails, assets will still be missing, next check handles persistence
+        generate_all_assets(topic, character_desc)
+
     if os.path.exists(ASSET_BLEND):
         print(f"✅ Character Identity Persistent: {ASSET_BLEND}")
         return True
 
-    print("⚡ Character missing. Commencing Layer 1 Generation...")
-    
-    # 1. Generate Image if missing
-    if not os.path.exists(ASSET_IMG):
-        prompt = "A friendly AI mascot character, soft 3D style" # Generic fallback
-        if not generate_character_image(prompt, ASSET_IMG):
-            # If ComfyUI fails, we use a placeholder or error
-            print("⚠️ ComfyUI Failed. Using internal proxy fallback...")
+    print("⚡ Character missing. Commencing Layer 1 Staging...")
     
     # 2. Stage in Blender
     # Use a small internal script to create the character.blend
@@ -66,7 +64,7 @@ if char_obj:
 bpy.ops.wm.save_as_mainfile(filepath="{os.path.abspath(ASSET_BLEND)}")
 """
     
-    temp_script = "temp_stage.py"
+    temp_script = os.path.join(os.getcwd(), "temp_stage.py")
     with open(temp_script, "w") as f: f.write(stage_script)
     
     try:
