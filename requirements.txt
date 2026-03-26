@@ -3,9 +3,11 @@ moviepy
 Pillow
 google-api-python-client
 google-auth-oauthlib
+google-auth-httplib2
 requests
 scipy
 flask
 gunicorn
 psutil
 pyttsx3
+python-dotenv
