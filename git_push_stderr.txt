@@ -1,0 +1,19 @@
+Pushing to https://github.com/Vengatesh-01/Youtube-Automation_AI
+Missing or invalid credentials.
+Error: connect ENOENT \\.\pipe\vscode-git-c1002f0bc5-sock
+    at PipeConnectWrap.afterConnect [as oncomplete] (node:net:1637:16) {
+  errno: -4058,
+  code: 'ENOENT',
+  syscall: 'connect',
+  address: '\\\\.\\pipe\\vscode-git-c1002f0bc5-sock'
+}
+Missing or invalid credentials.
+Error: connect ENOENT \\.\pipe\vscode-git-c1002f0bc5-sock
+    at PipeConnectWrap.afterConnect [as oncomplete] (node:net:1637:16) {
+  errno: -4058,
+  code: 'ENOENT',
+  syscall: 'connect',
+  address: '\\\\.\\pipe\\vscode-git-c1002f0bc5-sock'
+}
+remote: No anonymous write access.
+fatal: Authentication failed for 'https://github.com/Vengatesh-01/Youtube-Automation_AI/'
