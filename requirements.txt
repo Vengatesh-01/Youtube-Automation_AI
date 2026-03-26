@@ -1,0 +1,11 @@
+edge-tts
+moviepy
+Pillow
+google-api-python-client
+google-auth-oauthlib
+requests
+scipy
+flask
+gunicorn
+psutil
+pyttsx3

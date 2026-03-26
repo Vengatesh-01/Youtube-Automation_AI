@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: youtube-automation-worker
+    runtime: docker
+    plan: starter # Starter plan recommended for video rendering
+    envVars:
+      - key: ENABLE_UPLOAD
+        value: "true"
+      # Note: OAuth JSON content should be stored as Secrets/Environment Variables in the Render Dashboard
+    disk:
+      name: youtube-storage
+      mountPath: /app/videos
+      sizeGB: 10
