@@ -13,9 +13,9 @@ echo "  Python: $(python --version)"
 mkdir -p videos thumbnails scripts topics voiceovers
 
 # Launch Gunicorn immediately (scheduler starts in background via main.py)
-export PYTHONPATH=$PYTHONPATH:./YouTube_Automation_Free
+export PYTHONPATH=$PYTHONPATH:./YouTube_Automation_Free:.
 echo "Launching Gunicorn on port $PORT..."
-exec gunicorn YouTube_Automation_Free.main:app \
+exec gunicorn main:app \
     --bind "0.0.0.0:$PORT" \
     --workers 1 \
     --threads 4 \
