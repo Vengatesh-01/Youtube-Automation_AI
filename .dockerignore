@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Project Specific
+.git/
+.idea/
+.vscode/
+.env
+
+# Mediafallbacks (Exclude large local media, except templates)
+YouTube_Automation_Free/videos/*
+YouTube_Automation_Free/thumbnails/*
+YouTube_Automation_Free/voiceovers/*
+YouTube_Automation_Free/outputs/*
+!YouTube_Automation_Free/outputs/demo_face.mp4
+!YouTube_Automation_Free/outputs/AnimateDiff_FuturisticCity_00001.mp4
+
+# Sensitive
+client_secrets.json
+token.json

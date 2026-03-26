@@ -16,8 +16,21 @@ fi
 cd YouTube_Automation_Free || exit 1
 echo "  Changed directory to: $(pwd)"
 
+# Defensive Cleanup: Remove any local Windows venv that might have been copied
+if [ -d "venv" ]; then
+    echo "  [CLEANUP] Removing local Windows venv to prevent binary conflicts..."
+    rm -rf venv
+fi
+
 # Create required directories locally
 mkdir -p videos thumbnails scripts topics voiceovers
+
+# Pre-flight Check: Verify Python can load the main app (catches ImportErrors)
+echo "  [PRE-FLIGHT] Verifying app load..."
+if ! python3 -c "import main; print('  [PRE-FLIGHT] App loaded successfully')" ; then
+    echo "  [FATAL] Pre-flight check failed! Review the traceback above."
+    exit 3
+fi
 
 # Launch Gunicorn
 echo "Launching Gunicorn on port $PORT..."
@@ -25,5 +38,5 @@ exec gunicorn main:app \
     --bind "0.0.0.0:$PORT" \
     --workers 1 \
     --threads 4 \
-    --timeout 0 \
-    --log-level info
+    --timeout 120 \
+    --log-level debug
