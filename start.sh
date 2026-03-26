@@ -25,16 +25,20 @@ fi
 # Create required directories locally
 mkdir -p videos thumbnails scripts topics voiceovers
 
+# Diagnostic: Verify files are present
+echo "  [DIAGNOSTIC] Directory listing:"
+ls -la
+
 # Pre-flight Check: Verify Python can load the main app (catches ImportErrors)
 echo "  [PRE-FLIGHT] Verifying app load..."
-if ! python3 -c "import main; print('  [PRE-FLIGHT] App loaded successfully')" ; then
+if ! PYTHONPATH=. python3 -c "import main; print('  [PRE-FLIGHT] App loaded successfully')" ; then
     echo "  [FATAL] Pre-flight check failed! Review the traceback above."
     exit 3
 fi
 
 # Launch Gunicorn
 echo "Launching Gunicorn on port $PORT..."
-exec gunicorn main:app \
+exec PYTHONPATH=. gunicorn main:app \
     --bind "0.0.0.0:$PORT" \
     --workers 1 \
     --threads 4 \
