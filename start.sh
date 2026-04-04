@@ -12,27 +12,25 @@ if [ -f "token.json" ]; then
     cp token.json YouTube_Automation_Free/
 fi
 
-# Switch to the application directory
-cd YouTube_Automation_Free || exit 1
-echo "  Changed directory to: $(pwd)"
+# Ensure the required directories exist in root
+mkdir -p videos thumbnails scripts topics voiceovers
 
 # Defensive Cleanup: Remove any local Windows venv that might have been copied
 if [ -d "venv" ]; then
-    echo "  [CLEANUP] Removing local Windows venv to prevent binary conflicts..."
+    echo "  [CLEANUP] Removing local Windows venv..."
     rm -rf venv
 fi
 
-# Create required directories locally
-mkdir -p videos thumbnails scripts topics voiceovers
-
-# Diagnostic: Verify files are present
-echo "  [DIAGNOSTIC] Directory listing:"
+# Diagnostic: Verify files are present in root
+echo "  [DIAGNOSTIC] Root Directory listing:"
 ls -la
 
-# Pre-flight Check: Verify Python can load the main app (catches ImportErrors)
+# Pre-flight Check: Verify Python can load the main app from root
 echo "  [PRE-FLIGHT] Verifying app load..."
 if ! PYTHONPATH=. python3 -c "import main; print('  [PRE-FLIGHT] App loaded successfully')" ; then
     echo "  [FATAL] Pre-flight check failed! Review the traceback above."
+    # List files to help debug missing dependencies
+    ls -la
     exit 3
 fi
 
