@@ -38,12 +38,30 @@ RUN curl -L https://github.com/rhasspy/piper/releases/download/2023.11.14-2/pipe
     rm piper.tar.gz && \
     ln -s /opt/piper/piper /usr/local/bin/piper
 
-# 🎬 Install Blender 4.2 LTS (Official Binary)
-RUN curl -L https://download.blender.org/release/Blender4.2/blender-4.2.3-linux-x64.tar.xz -o blender.tar.xz && \
-    mkdir /opt/blender && \
-    tar -xJf blender.tar.xz -C /opt/blender --strip-components=1 && \
-    rm blender.tar.xz && \
-    ln -s /opt/blender/blender /usr/local/bin/blender
+# 🎬 Removed Blender (Transitioning to SadTalker Lip-Sync)
+# 🎙️ SadTalker Dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git \
+    git-lfs \
+    libglade2-0 \
+    libcanberra-gtk-module \
+    libcanberra-gtk3-module \
+    && rm -rf /var/lib/apt/lists/*
+
+# Clone SadTalker
+RUN git clone https://github.com/OpenTalker/SadTalker.git /app/SadTalker
+
+# Download SadTalker weights (Using the official script if available, or manual curl)
+# We use a subset of weights to keep the image size manageable
+WORKDIR /app/SadTalker
+RUN mkdir -p checkpoints gfpgan/weights
+RUN curl -L https://github.com/OpenTalker/SadTalker/releases/download/v0.0.2-rc/mapping_00109-72000.pth.tar -o checkpoints/mapping_00109-72000.pth.tar && \
+    curl -L https://github.com/OpenTalker/SadTalker/releases/download/v0.0.2-rc/mapping_00229-108000.pth.tar -o checkpoints/mapping_00229-108000.pth.tar && \
+    curl -L https://github.com/OpenTalker/SadTalker/releases/download/v0.0.2-rc/SadTalker_V0.0.2_256.safetensors -o checkpoints/SadTalker_V0.0.2_256.safetensors && \
+    curl -L https://github.com/OpenTalker/SadTalker/releases/download/v0.0.2-rc/wav2lip.pth -o checkpoints/wav2lip.pth
+# Note: Full weights are ~2GB, we only download the absolute essentials for 256px lip-sync
+
+WORKDIR /app
 
 # Fix ImageMagick policy (MoviePy requirement)
 RUN if [ -f /etc/ImageMagick-7/policy.xml ]; then \

@@ -11,3 +11,22 @@ gunicorn
 psutil
 pyttsx3
 python-dotenv
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch
+torchvision
+torchaudio
+numpy
+opencv-python-headless
+resampy
+yacs
+yaml
+face-alignment
+tqdm
+gdown
+dlib
+imageio
+imageio-ffmpeg
+librosa
+numba
+scikit-image
+pyyaml
