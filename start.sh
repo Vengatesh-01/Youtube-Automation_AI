@@ -39,7 +39,8 @@ fi
 
 # Launch Gunicorn
 echo "Launching Gunicorn on port $PORT..."
-exec PYTHONPATH=. gunicorn main:app \
+export PYTHONPATH=.
+exec gunicorn main:app \
     --bind "0.0.0.0:$PORT" \
     --workers 1 \
     --threads 4 \
