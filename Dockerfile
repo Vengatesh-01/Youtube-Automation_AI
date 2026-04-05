@@ -24,6 +24,8 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-ins
     libxext6 \
     libxxf86vm1 \
     libxfixes3 \
+    cmake \
+    libboost-all-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # 🧠 Install Rhubarb Lip Sync (Linux binary)
