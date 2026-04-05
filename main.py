@@ -15,6 +15,13 @@ Scheduling:
 """
 
 import sys
+import os
+
+# Ensure the app directory is in sys.path for robust module imports on Linux (Render)
+abs_path = os.path.dirname(os.path.abspath(__file__))
+if abs_path not in sys.path:
+    sys.path.insert(0, abs_path)
+
 import time
 import threading
 import os
