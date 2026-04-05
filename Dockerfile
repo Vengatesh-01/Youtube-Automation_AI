@@ -83,7 +83,9 @@ COPY requirements.txt .
 
 # 🧠 Install dlib and SadTalker dependencies with memory limits
 # Using -j 1 to prevent "Ran out of memory" errors on Render build servers
+# Disabling GUI support to speed up compilation
 RUN export MAKEFLAGS="-j 1" && \
+    export DLIB_NO_GUI_SUPPORT=1 && \
     pip install --no-cache-dir dlib && \
     pip install --no-cache-dir -r requirements.txt
 
