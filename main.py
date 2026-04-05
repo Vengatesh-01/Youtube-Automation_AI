@@ -4,7 +4,7 @@ main.py — YouTube Automation Orchestrator
 Runs all agents in sequence:
   1. topic_agent    → Fetch trending topics
   2. script_agent   → Write video script
-  3. voice_agent    → Generate voice (Edge TTS)
+  3. voice_agent    → Generate voiceover (Edge TTS)
   4. thumbnail_agent → Create thumbnail (Pillow)
   5. video_agent    → Render final video (MoviePy)
   6. upload_agent   → Upload to YouTube (OAuth)
@@ -22,7 +22,7 @@ from datetime import datetime, timezone, timedelta
 from flask import Flask, send_from_directory, render_template_string
 import glob
 import traceback
-import psutil
+# import psutil  # Moved to log() for boot resilience
 import json
 
 # Force line buffering for logs (Python 3.7+)
@@ -40,9 +40,7 @@ try:
 except Exception as e:
     print(f"--- [BOOT] CRITICAL: safe_print failed: {e} ---", file=sys.stderr)
 
-
 app = Flask(__name__)
-
 
 # --- UI Templates ---
 INDEX_HTML = """
@@ -60,60 +58,54 @@ INDEX_HTML = """
         ul { list-style: none; padding: 0; }
         li { background: #eee; margin: 5px 0; padding: 10px; border-radius: 4px; display: flex; justify-content: space-between; }
         a.download { color: #2196f3; text-decoration: none; }
-        pre { background: #222; color: #0f0; padding: 10px; border-radius: 4px; overflow-x: auto; }
     </style>
 </head>
 <body>
     <div class="card">
-        <h1>&#x1F680;&#x200B; YouTube Automation System</h1>
+        <h1>🚀 YouTube Automation</h1>
         <p>Status: <span class="status">Online</span></p>
         <p>Schedule: {{ schedule }}</p>
         <div style="display: flex; gap: 10px;">
-            <a href="/run" class="btn">&#x25B6;&#xFE0F; Run Standard Pipeline</a>
-            <a href="/cartoon" class="btn" style="background: #2196f3;">&#x1F3AD;&#x200B; Run Cartoon Pipeline</a>
+            <a href="/run" class="btn">▶ Run Standard Pipeline</a>
+            <a href="/cartoon" class="btn" style="background: #2196f3;">🎭 Run Cartoon Pipeline</a>
         </div>
     </div>
 
     <div class="card">
-        <h2>&#x1F4F9;&#x200B; Generated Videos</h2>
+        <h2>📂 Generated Videos</h2>
         <ul>
-        {% for video in videos %}
+            {% for video in videos %}
             <li>
                 <span>{{ video }}</span>
-                <a href="/download/{{ video }}" class="download">Download &#x2B07;</a>
+                <a href="/download/{{ video }}" class="download">Download ↓</a>
             </li>
-        {% endfor %}
-        {% if not videos %}<li>No videos generated yet.</li>{% endif %}
+            {% endfor %}
+            {% if not videos %}<li>No videos generated yet.</li>{% endif %}
         </ul>
     </div>
 
     <div class="card">
-        <h2>&#x1F4CB;&#x200B; Recent Logs</h2>
-        <pre>{{ logs }}</pre>
+        <h2>📜 Recent Logs</h2>
+        <pre style="background: #222; color: #0f0; padding: 10px; border-radius: 4px; overflow-x: auto;">{{ logs }}</pre>
     </div>
-
 </body>
 </html>
 """
 
-
 @app.route('/')
 def dashboard():
-    video_files = [
-        os.path.basename(f) for f in glob.glob("videos/*.mp4")
-    ]
+    video_files = [os.path.basename(f) for f in glob.glob("videos/*.mp4")]
     log_content = "No logs yet."
     if os.path.exists("videos/automation.log"):
-        with open("videos/automation.log", "r", encoding="utf-8") as f:
-            log_content = "".join(f.readlines()[-20:])  # Last 20 lines
-
+        with open("videos/automation.log", "r") as f:
+            log_content = "".join(f.readlines()[-20:]) # Last 20 lines
+            
     return render_template_string(
-        INDEX_HTML,
+        INDEX_HTML, 
         schedule=SCHEDULE_TIMES, 
         videos=sorted(video_files, reverse=True),
         logs=log_content
     )
-
 
 @app.route('/run')
 def trigger_pipeline():
@@ -124,15 +116,14 @@ def trigger_pipeline():
     log(f"Web Trigger: Background thread started. Thread alive: {thread.is_alive()}")
     return """
     <html>
-    <body style="font-family: sans-serif; text-align: center; padding: 50px;">
-        <h1>&#x26A1; Pipeline Triggered!</h1>
-        <p>The automation is now running in the background.</p>
-        <p><a href="/">Return to Dashboard</a></p>
-        <script>setTimeout(()=> { window.location.href = "/"; }, 3000);</script>
-    </body>
+        <body style="font-family: sans-serif; text-align: center; padding: 50px;">
+            <h1>✅ Pipeline Triggered!</h1>
+            <p>The automation is now running in the background.</p>
+            <p><a href="/">Return to Dashboard</a></p>
+            <script>setTimeout(() => { window.location.href = "/"; }, 3000);</script>
+        </body>
     </html>
     """, 202
-
 
 @app.route('/cartoon')
 def trigger_cartoon_pipeline():
@@ -142,41 +133,67 @@ def trigger_cartoon_pipeline():
         from cartoon_pipeline import run_production_pipeline
         thread = threading.Thread(target=run_production_pipeline, args=("The 3 AM billionaire routine",), daemon=True)
         thread.start()
-        log(f"Web Trigger: Cartoon background thread started. Thread alive: {thread.is_alive()}")
+        log(f"Web Trigger: Cartoon background thread started.")
         return """
         <html>
-        <body style="font-family: sans-serif; text-align: center; padding: 50px;">
-            <h1>&#x1F3AD;&#x200B; Cartoon Pipeline Triggered!</h1>
-            <p>The 3D cartoon automation is now running.</p>
-            <p><a href="/">Return to Dashboard</a></p>
-            <script>setTimeout(()=> { window.location.href = "/"; }, 3000);</script>
-        </body>
+            <body style="font-family: sans-serif; text-align: center; padding: 50px;">
+                <h1>🎭 Cartoon Pipeline Triggered!</h1>
+                <p>The 3D automation is now running in the background.</p>
+                <p><a href="/">Return to Dashboard</a></p>
+                <script>setTimeout(() => { window.location.href = "/"; }, 3000);</script>
+            </body>
         </html>
         """, 202
     except Exception as e:
-        log(f"&#x1F6A8;&#x200B; Error triggering cartoon pipeline: {e}")
+        log(f"❌ Error triggering cartoon pipeline: {e}")
         return f"Error: {e}", 500
-
 
 @app.route('/download/<filename>')
 def download_video(filename):
     """Download a specific generated video."""
-    """Download a specific generated video."""
     return send_from_directory("videos", filename, as_attachment=True)
-
 
 def run_server():
     port = int(os.environ.get("PORT", 8080))
     app.run(host='0.0.0.0', port=port)
 
-
 # --- Configuration ---
 SCHEDULE_TIMES = ["16:20", "04:00", "09:30"]   # 9:50 PM IST (test), 9:30 AM IST, 3:00 PM IST
-ENABLE_UPLOAD = True            # client_secrets.json is configured
+ENABLE_UPLOAD = True                   # client_secrets.json is configured
+# ---------------------
 
-# -------------------- Persistence --------------------
+# DEFERRED AGENT IMPORTS (Moved inside run_pipeline to prevent boot-time crashes)
+# from topic_agent import generate_topics
+# from script_agent import generate_script
+# from voice_agent import generate_voice
+# from video_agent import create_video
+# from thumbnail_agent import generate_thumbnail
+# from upload_agent import upload_video
+
+
+def log(msg):
+    try:
+        # Move import here to ensure boot success even if psutil fails
+        import psutil
+        mem = psutil.virtual_memory().percent
+        timestamp = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')
+        log_line = f"[{timestamp}] [RAM: {mem}%] {msg}"
+        
+        # Windows console safe print
+        safe_print(log_line)
+        
+        # Persistent log file in videos directory (mounted disk on Render)
+        os.makedirs("videos", exist_ok=True)
+        # Use utf-8 encoding explicitly
+        with open("videos/automation.log", "a", encoding="utf-8") as f:
+            f.write(log_line + "\n")
+            f.flush()
+            os.fsync(f.fileno())
+    except Exception as e:
+        # Fallback to standard print if file logging fails or psutil missing
+        print(f"Logging error: {e}")
+
 PERSISTENCE_FILE = "videos/last_run.json"
-
 
 def get_last_run():
     if os.path.exists(PERSISTENCE_FILE):
@@ -186,7 +203,6 @@ def get_last_run():
         except:
             return {}
     return {}
-
 
 def save_last_run(run_id, status="scheduled"):
     data = get_last_run()
@@ -205,9 +221,9 @@ def save_last_run(run_id, status="scheduled"):
 
 def run_pipeline():
     try:
-        log("================ YouTube Automation Pipeline Starting ================ ")
+        log("===== YouTube Automation Pipeline Starting =====")
         
-        # DEFERRED IMPORTS (Moved inside run_pipeline to prevent boot-time crashes)
+        # Deferred imports to ensure boot success even if an agent has missing dependencies
         from topic_agent import generate_topics
         from script_agent import generate_script
         from voice_agent import generate_voice
@@ -216,7 +232,7 @@ def run_pipeline():
         from upload_agent import upload_video
 
         # Step 1: Topic
-        log("Step 1/6 → Generating topic..")
+        log("Step 1/6 — Generating topic...")
         topics = generate_topics()
         if not topics:
             raise ValueError("No topics generated!")
@@ -224,25 +240,25 @@ def run_pipeline():
         log(f"Topic: {topic['title']}")
 
         # Step 2: Script
-        log("Step 2/6 → Generating script..")
+        log("Step 2/6 — Generating script...")
         script = generate_script(topic)
         if not script or len(script) < 10:
-            script = f"Exploring the depths of {topic['title']} reveals amazing insights."
+             script = f"Exploring the depths of {topic['title']} reveals amazing insights."
 
-        # Step 3: Voiceover (Edge TTS)
-        log("Step 3/6 → Generating voiceover..")
+        # Step 3: Voiceover
+        log("Step 3/6 — Generating voiceover...")
         voice_file = generate_voice(script)
 
-        # Step 4: Thumbnail (Pillow)
-        log("Step 4/6 → Creating thumbnail..")
-        thumbnail_file = generate_thumbnail(topic['title'], topic.get('category', 'Trending'))
+        # Step 4: Thumbnail
+        log("Step 4/6 — Creating thumbnail...")
+        thumbnail_file = generate_thumbnail(topic["title"], topic.get("category", "Trending"))
 
         # Step 5: Background (Thematically based on script)
-        log("Step 5/6 → Generating AnimatedDiff background..")
+        log("Step 5/6 — Generating AnimateDiff background...")
         from generate_animated_background import generate_animated_background
         
         # Use script for better visual alignment
-        clean_prompt = script[:100].replace("[", "").replace("]", "").replace('"', '').strip()
+        clean_prompt = script[:100].replace("[", "").replace("]", "").strip()
         bg_prompt = f"{clean_prompt}, cinematic, high quality, loop, abstract motion"
         
         bg_video = None
@@ -257,32 +273,32 @@ def run_pipeline():
                 fps=8
             )
         except Exception as e:
-            log(f"AnimatedDiff Error: {e}")
+            log(f"AnimateDiff Error: {e}")
 
         if not bg_video:
-            log("AnimatedDiff FAILED or server DOWN, using fallback.")
-            bg_video = os.path.abspath("outputs/AnimatedDiff_Futuristic_City_00001.mp4")
+            log("AnimateDiff FAILED or server DOWN, using fallback.")
+            bg_video = os.path.abspath("outputs/AnimateDiff_FuturisticCity_00001.mp4")
 
         # Step 6: Talking Head (SadTalker)
-        log("Step 6/6 → Generating Talking Head (SadTalker)..")
+        log("Step 6/6 — Generating Talking Head (SadTalker)...")
         # Check if SadTalker is available (path-wise)
         SADTALKER_DIR = r"C:\Users\User\Downloads\SadTalker-main\SadTalker-main"
         if os.path.exists(SADTALKER_DIR):
             # Run my new integrated SadTalker runner logic
             # For now, we assume the user has a pre-generated result or we call it
-            # But in Render environment, we might not have Sadtalker.
-            # To be safe, we assume the user has a pre-generated face video or we call it
+            # But in Render environment, we might need a different approach.
+            # To be safe and fast for the user, we use the last generated result if it exists.
             face_video = os.path.join(SADTALKER_DIR, "results", "result.mp4")
             if not os.path.exists(face_video):
                 # Attempt to run it (Simplified)
-                log("SadTalker result.mp4 missing, using fallback.")
+                log("SadTalker result.mp4 missing, using fallback for now.")
                 face_video = os.path.abspath("outputs/demo_face.mp4")
         else:
             log("SadTalker directory not found (likely running on Render), using face fallback.")
             face_video = os.path.abspath("outputs/demo_face.mp4")
 
         # Combine Everything
-        log("Final Step → Compositing..")
+        log("Final Step — Compositing...")
         from combine_videos import combine
         
         os.makedirs("videos", exist_ok=True)
@@ -294,15 +310,15 @@ def run_pipeline():
 
         # Optional YouTube Upload
         if ENABLE_UPLOAD:
-            log("Final Phase → Uploading to YouTube..")
+            log("Final Phase — Uploading to YouTube...")
             # SEO Metadata
             seo_tags = topic.get("tags", ["shorts", "ai", "trending"])
             seo_description = f"{script[:200]}...\n\n#Shorts #AI #Topic:{topic['title']}"
             
             url = upload_video(
-                video_file=video_file,
+                video_file=video_file, 
                 title=f"{topic['title']} #Shorts", 
-                description=seo_description,
+                description=seo_description, 
                 thumbnail_file=thumbnail_file,
                 tags=seo_tags
             )
@@ -310,8 +326,8 @@ def run_pipeline():
         else:
             log("Upload skipped (ENABLE_UPLOAD=False).")
 
-        log("================ Pipeline Complete ================ ")
-        log(f" Video Ready: {video_file}")
+        log("===== Pipeline Complete =====")
+        log(f"  Video Ready: {video_file}")
 
     except Exception as e:
         log(f"❌ PIPELINE ERROR: {str(e)}")
@@ -330,19 +346,17 @@ def get_next_run_time(schedule_times):
         if target <= now:
             target += timedelta(days=1)
         possible_targets.append(target)
-        
+    
     return min(possible_targets)
 
-
 # State to track last run to prevent double-firing
-LAST_RUN_DATE = None
+LAST_RUN_DATE = None 
 
 
 import traceback
 
-
 def run_scheduler():
-    """Background loop for the scheduler. Checks every 30 seconds between checks."""
+    """Background loop for the scheduler. Checks every 30 seconds."""
     log(f"Scheduler initialized with UTC times: {', '.join(SCHEDULE_TIMES)}")
     
     while True:
@@ -361,42 +375,20 @@ def run_scheduler():
 
             # If current time is in schedule and we haven't run yet today for this slot
             if now_str in SCHEDULE_TIMES and run_id not in last_runs:
-                log(f"🔔 Scheduled trigger matched: {now_str} UTC")
+                log(f"⏰ Scheduled trigger matched: {now_str} UTC")
                 save_last_run(run_id, "triggered")
                 threading.Thread(target=run_pipeline, daemon=True).start()
-                
+            
             # log status occasionally (every hour)
             if now.minute == 0 and now.second < 40:
                 next_run = get_next_run_time(SCHEDULE_TIMES)
                 log(f"Heartbeat: Scheduler active. Next run at {next_run.strftime('%Y-%m-%d %H:%M')} UTC")
 
-            time.sleep(30)  # Wait 30 seconds between checks
+            time.sleep(30) # Wait 30 seconds between checks
         except Exception:
             log("CRITICAL ERROR in Scheduler Loop:")
             traceback.print_exc()
             time.sleep(30)
-
-
-def log(msg):
-    try:
-        mem = psutil.virtual_memory().percent
-        timestamp = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')
-        log_line = f"[{timestamp}] [RAM: {mem}%] {msg}"
-        
-        # Windows console safe print
-        safe_print(log_line)
-        
-        # Persistent log file in videos directory (mounted disk on Render)
-        os.makedirs("videos", exist_ok=True)
-        # Use utf-8 encoding explicitly
-        with open("videos/automation.log", "a", encoding="utf-8") as f:
-            f.write(log_line + "\n")
-            f.flush()
-            os.fsync(f.fileno())
-    except Exception as e:
-        # Fallback to standard print if file logging fails
-        print(f"Logging error: {e}")
-
 
 # --- ENTRY POINT for Render (Gunicorn looks for 'app') ---
 if __name__ == "__main__":
@@ -423,5 +415,3 @@ else:
     except Exception as e:
         print(f"--- [CRITICAL] Gunicorn Worker Boot Failed: {e} ---", file=sys.stderr)
         traceback.print_exc()
-
-# trigger

@@ -27,10 +27,13 @@ ls -la
 
 # Pre-flight Check: Verify Python can load the main app from root
 echo "  [PRE-FLIGHT] Verifying app load..."
-if ! PYTHONPATH=. python3 -c "import main; print('  [PRE-FLIGHT] App loaded successfully')" ; then
-    echo "  [FATAL] Pre-flight check failed! Review the traceback above."
-    # List files to help debug missing dependencies
-    ls -la
+if ! PYTHONPATH=. python3 -c "import main; print('  [PRE-FLIGHT] App loaded successfully')" > preflight.log 2>&1 ; then
+    echo "  [FATAL] Pre-flight check failed! Review the traceback below:"
+    cat preflight.log
+    echo "--- [DIAGNOSTIC] Installed Packages ---"
+    pip list
+    echo "--- [DIAGNOSTIC] Environment Variables ---"
+    env | grep -E "PORT|PYTHON|PATH"
     exit 3
 fi
 
