@@ -22,7 +22,6 @@ yacs
 face-alignment
 tqdm
 gdown
-dlib
 imageio
 imageio-ffmpeg
 librosa

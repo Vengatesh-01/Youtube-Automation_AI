@@ -78,9 +78,14 @@ RUN if [ -f /etc/ImageMagick-7/policy.xml ]; then \
 
 WORKDIR /app
 
-# Copy and install Python dependencies
+# Copy requirements first
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+
+# 🧠 Install dlib and SadTalker dependencies with memory limits
+# Using -j 1 to prevent "Ran out of memory" errors on Render build servers
+RUN export MAKEFLAGS="-j 1" && \
+    pip install --no-cache-dir dlib && \
+    pip install --no-cache-dir -r requirements.txt
 
 # Copy the rest of the application
 COPY . .
