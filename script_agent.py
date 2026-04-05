@@ -11,14 +11,16 @@ def generate_script_with_ollama(topic_dict):
     
     prompt = f"""
     Act as a Principal Viral Script Strategist. 
-    Your goal is 100% retention for a 5-second YouTube Short about: {title}.
+    Your goal is 100% retention for a 30-second YouTube Short about: {title}.
     
     STRUCTURE (MANDATORY):
-    1. THE HOOK (0-2s): Max 5 words.
-    2. THE PAYOFF (2-5s): Short punchy insight.
+    1. THE HOOK (0-3s): Max 7 words. Pattern interrupt.
+    2. THE INSIGHT (3-25s): High-value, fast-paced explanation.
+    3. THE PAYOFF (25-30s): Punchy closing thought.
     
     STYLE RULES:
-    - Total word count: MAX 15-20 words.
+    - Total word count: 60-90 words.
+    - Sentence length: MAX 10 words. 
     - Output ONLY the spoken words. 
     - NO STAGE DIRECTIONS. NO LABELS.
     """

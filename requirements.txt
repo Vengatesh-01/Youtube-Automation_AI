@@ -19,7 +19,6 @@ numpy
 opencv-python-headless
 resampy
 yacs
-yaml
 face-alignment
 tqdm
 gdown
@@ -29,4 +28,3 @@ imageio-ffmpeg
 librosa
 numba
 scikit-image
-pyyaml
