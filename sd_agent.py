@@ -23,7 +23,7 @@ def generate_local_animation(prompt_text, output_filename, model_name=None):
         success = False
     else:
         # Use SDXL or a high-quality model endpoint on HF
-        hf_api_url = "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0"
+        hf_api_url = "https://router.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0"
         headers = {"Authorization": f"Bearer {hf_token}"}
         
         payload = {
