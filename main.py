@@ -230,6 +230,27 @@ def run_pipeline():
         from video_agent import create_video
         from thumbnail_agent import generate_thumbnail
         from upload_agent import upload_video
+        import random
+        from character_profiles import get_random_character
+
+        # Pick a character for this video
+        character = get_random_character()
+        log(f"🎬 Selected Character: {character['name']} (Seed: {character['seed']})")
+        
+        # Determine voice based on gender
+        gender = "woman" # default
+        for g in ["man", "woman", "boy", "girl"]:
+            if g in character["visual"].lower():
+                gender = g
+                break
+        
+        voice_map = {
+            "man": "en-US-ChristopherNeural",
+            "woman": "en-US-JennyNeural",
+            "boy": "en-GB-ThomasNeural",
+            "girl": "en-US-AnaNeural"
+        }
+        selected_voice = voice_map.get(gender, "en-US-ChristopherNeural")
 
         # Step 1: Topic
         log("Step 1/6 — Generating topic...")
@@ -245,9 +266,9 @@ def run_pipeline():
         with open(script_file_path, "r", encoding="utf-8") as f:
             full_script_text = f.read()
 
-        # Step 3: Voiceover
-        log("Step 3/6 — Generating voiceover...")
-        voice_file = generate_voice(full_script_text)
+        # Step 3: Voiceover & Subtitles
+        log(f"Step 3/6 — Generating voiceover and subtitles (Voice: {selected_voice})...")
+        voice_file, vtt_file = generate_voice(full_script_text, voice_name=selected_voice)
 
         # Step 4: Thumbnail
         log("Step 4/6 — Creating thumbnail...")
@@ -262,13 +283,19 @@ def run_pipeline():
         if not image_prompts:
             log("No 'Image Prompt:' tags found in script, falling back to a single generic scene.")
             clean_prompt = full_script_text[:100].replace("[", "").replace("]", "").strip()
-            image_prompts = [f"Pixar-style 3D animation, {clean_prompt}, cinematic, high quality"]
+            image_prompts = [f"{clean_prompt}, cinematic, high quality"]
             
         video_segments = []
+        effects = ["zoom_in", "zoom_out", "pan_left", "pan_right"]
+        
         for i, prompt in enumerate(image_prompts):
             seg_path = os.path.abspath(f"outputs/seg_{uuid.uuid4().hex[:8]}.mp4")
-            log(f"Rendering scene {i+1}/{len(image_prompts)}: {prompt[:40]}...")
-            if generate_local_animation(prompt, seg_path):
+            # Enhance prompt with character description
+            enhanced_prompt = f"Pixar 3D Disney animation style, {character['visual']}, {prompt}"
+            effect = random.choice(effects)
+            
+            log(f"Rendering scene {i+1}/{len(image_prompts)}: {enhanced_prompt[:40]}... (Effect: {effect})")
+            if generate_local_animation(enhanced_prompt, seg_path, seed=character['seed'], effect=effect):
                 video_segments.append(seg_path)
 
         # Step 6: Combine Everything via FFmpeg
@@ -279,7 +306,12 @@ def run_pipeline():
         ts = datetime.now(timezone.utc).strftime("%H%M%S")
         final_video_file = os.path.abspath(f"videos/final_video_{ts}.mp4")
         
-        video_file = create_video(video_segments, voice_file, final_video_file)
+        args = [video_segments]
+        if voice_file: args.append(voice_file)
+        if vtt_file: args.append(vtt_file)
+        args.append(final_video_file)
+        
+        video_file = create_video(*args)
         if not video_file:
             log("⚠️ FFmpeg Assembly yielded no file, searching for fallback...")
             video_file = final_video_file if os.path.exists(final_video_file) else None
