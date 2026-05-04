@@ -158,8 +158,8 @@ def run_server():
     app.run(host='0.0.0.0', port=port)
 
 # --- Configuration ---
-SCHEDULE_TIMES = ["16:20", "04:00", "09:30"]   # 9:50 PM IST (test), 9:30 AM IST, 3:00 PM IST
-ENABLE_UPLOAD = False                   # client_secrets.json is configured
+SCHEDULE_TIMES = ["04:30"]              # 10:00 AM IST
+ENABLE_UPLOAD = True                    # client_secrets.json is configured
 # ---------------------
 
 # DEFERRED AGENT IMPORTS (Moved inside run_pipeline to prevent boot-time crashes)
