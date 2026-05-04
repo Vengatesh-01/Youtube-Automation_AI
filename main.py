@@ -159,7 +159,7 @@ def run_server():
 
 # --- Configuration ---
 SCHEDULE_TIMES = ["16:20", "04:00", "09:30"]   # 9:50 PM IST (test), 9:30 AM IST, 3:00 PM IST
-ENABLE_UPLOAD = True                   # client_secrets.json is configured
+ENABLE_UPLOAD = False                   # client_secrets.json is configured
 # ---------------------
 
 # DEFERRED AGENT IMPORTS (Moved inside run_pipeline to prevent boot-time crashes)
@@ -241,79 +241,55 @@ def run_pipeline():
 
         # Step 2: Script
         log("Step 2/6 — Generating script...")
-        script = generate_script(topic)
-        if not script or len(script) < 10:
-             script = f"Exploring the depths of {topic['title']} reveals amazing insights."
+        script_file_path = generate_script(topic)
+        with open(script_file_path, "r", encoding="utf-8") as f:
+            full_script_text = f.read()
 
         # Step 3: Voiceover
         log("Step 3/6 — Generating voiceover...")
-        voice_file = generate_voice(script)
+        voice_file = generate_voice(full_script_text)
 
         # Step 4: Thumbnail
         log("Step 4/6 — Creating thumbnail...")
         thumbnail_file = generate_thumbnail(topic["title"], topic.get("category", "Trending"))
 
-        # Step 5: Background (Thematically based on script)
-        log("Step 5/6 — Generating AnimateDiff background...")
-        from generate_animated_background import generate_animated_background
+        # Step 5: Visuals using Stable Diffusion Agent (5-scene strategy)
+        log("Step 5/6 — Generating Visuals via Stable Diffusion...")
+        from sd_agent import generate_local_animation
+        import re, uuid
         
-        # Use script for better visual alignment
-        clean_prompt = script[:100].replace("[", "").replace("]", "").strip()
-        bg_prompt = f"{clean_prompt}, cinematic, high quality, loop, abstract motion"
-        
-        bg_video = None
-        try:
-            bg_video = generate_animated_background(
-                positive_prompt=bg_prompt,
-                negative_prompt="blurry, low quality, distorted, text, watermark",
-                width=512,
-                height=512,
-                steps=30,
-                num_frames=12,
-                fps=8
-            )
-        except Exception as e:
-            log(f"AnimateDiff Error: {e}")
+        image_prompts = re.findall(r'Image Prompt:\s*(.*)', full_script_text, re.IGNORECASE)
+        if not image_prompts:
+            log("No 'Image Prompt:' tags found in script, falling back to a single generic scene.")
+            clean_prompt = full_script_text[:100].replace("[", "").replace("]", "").strip()
+            image_prompts = [f"Pixar-style 3D animation, {clean_prompt}, cinematic, high quality"]
+            
+        video_segments = []
+        for i, prompt in enumerate(image_prompts):
+            seg_path = os.path.abspath(f"outputs/seg_{uuid.uuid4().hex[:8]}.mp4")
+            log(f"Rendering scene {i+1}/{len(image_prompts)}: {prompt[:40]}...")
+            if generate_local_animation(prompt, seg_path):
+                video_segments.append(seg_path)
 
-        if not bg_video:
-            log("AnimateDiff FAILED or server DOWN, using fallback.")
-            bg_video = os.path.abspath("outputs/AnimateDiff_FuturisticCity_00001.mp4")
-
-        # Step 6: Talking Head (SadTalker)
-        log("Step 6/6 — Generating Talking Head (SadTalker)...")
-        # Check if SadTalker is available (path-wise)
-        SADTALKER_DIR = r"C:\Users\User\Downloads\SadTalker-main\SadTalker-main"
-        if os.path.exists(SADTALKER_DIR):
-            # Run my new integrated SadTalker runner logic
-            # For now, we assume the user has a pre-generated result or we call it
-            # But in Render environment, we might need a different approach.
-            # To be safe and fast for the user, we use the last generated result if it exists.
-            face_video = os.path.join(SADTALKER_DIR, "results", "result.mp4")
-            if not os.path.exists(face_video):
-                # Attempt to run it (Simplified)
-                log("SadTalker result.mp4 missing, using fallback for now.")
-                face_video = os.path.abspath("outputs/demo_face.mp4")
-        else:
-            log("SadTalker directory not found (likely running on Render), using face fallback.")
-            face_video = os.path.abspath("outputs/demo_face.mp4")
-
-        # Combine Everything
+        # Step 6: Combine Everything via FFmpeg
         log("Final Step — Compositing...")
-        from combine_videos import combine
+        from video_agent import create_video
         
         os.makedirs("videos", exist_ok=True)
-        ts = datetime.now().strftime("%H%M%S")
+        ts = datetime.now(timezone.utc).strftime("%H%M%S")
         final_video_file = os.path.abspath(f"videos/final_video_{ts}.mp4")
         
-        combine(face_video, bg_video, final_video_file, mode="FINAL")
-        video_file = final_video_file
+        video_file = create_video(video_segments, voice_file, final_video_file)
+        if not video_file:
+            log("⚠️ FFmpeg Assembly yielded no file, searching for fallback...")
+            video_file = final_video_file if os.path.exists(final_video_file) else None
 
         # Optional YouTube Upload
         if ENABLE_UPLOAD:
             log("Final Phase — Uploading to YouTube...")
             # SEO Metadata
             seo_tags = topic.get("tags", ["shorts", "ai", "trending"])
-            seo_description = f"{script[:200]}...\n\n#Shorts #AI #Topic:{topic['title']}"
+            seo_description = f"{full_script_text[:200]}...\n\n#Shorts #AI #Topic:{topic['title']}"
             
             url = upload_video(
                 video_file=video_file, 
