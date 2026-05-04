@@ -233,15 +233,16 @@ def run_pipeline():
         import random
         from character_profiles import get_random_character
 
-        # Pick a character for this video
-        character = get_random_character()
-        log(f"🎬 Selected Character: {character['name']} (Seed: {character['seed']})")
+        # Pick THREE different characters for this video
+        character_pool = [get_random_character() for _ in range(3)]
+        for i, char in enumerate(character_pool):
+            log(f"🎬 Character {i+1}: {char['name']} - {char['visual'][:50]}...")
         
-        # Determine voice based on gender
-        gender = "woman" # default
+        # Use the first character's gender for the narrator voice
+        main_gender = "woman"
         for g in ["man", "woman", "boy", "girl"]:
-            if g in character["visual"].lower():
-                gender = g
+            if g in character_pool[0]["visual"].lower():
+                main_gender = g
                 break
         
         voice_map = {
@@ -250,7 +251,7 @@ def run_pipeline():
             "boy": "en-GB-ThomasNeural",
             "girl": "en-US-AnaNeural"
         }
-        selected_voice = voice_map.get(gender, "en-US-ChristopherNeural")
+        selected_voice = voice_map.get(main_gender, "en-US-ChristopherNeural")
 
         # Step 1: Topic
         log("Step 1/6 — Generating topic...")
@@ -290,12 +291,16 @@ def run_pipeline():
         
         for i, prompt in enumerate(image_prompts):
             seg_path = os.path.abspath(f"outputs/seg_{uuid.uuid4().hex[:8]}.mp4")
-            # Enhance prompt with character description
-            enhanced_prompt = f"Pixar 3D Disney animation style, {character['visual']}, {prompt}"
+            
+            # Rotate through the 3 characters
+            current_char = character_pool[i % len(character_pool)]
+            
+            # Enhance prompt with current character description
+            enhanced_prompt = f"Pixar 3D Disney animation style, {current_char['visual']}, {prompt}"
             effect = random.choice(effects)
             
-            log(f"Rendering scene {i+1}/{len(image_prompts)}: {enhanced_prompt[:40]}... (Effect: {effect})")
-            if generate_local_animation(enhanced_prompt, seg_path, seed=character['seed'], effect=effect):
+            log(f"Rendering scene {i+1}/{len(image_prompts)} with {current_char['name']}: {enhanced_prompt[:40]}... (Effect: {effect})")
+            if generate_local_animation(enhanced_prompt, seg_path, seed=current_char['seed'], effect=effect):
                 video_segments.append(seg_path)
 
         # Step 6: Combine Everything via FFmpeg
