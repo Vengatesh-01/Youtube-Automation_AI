@@ -59,8 +59,7 @@ BACKGROUNDS = [
 EMOTIONS = ["happy", "sad", "surprised", "thoughtful", "nervous", "determined", "worried", "excited"]
 
 
-def get_random_character() -> dict:
-    return random.choice(CHARACTERS)
+
 
 
 def get_scene_prompt(character: dict, scene_text: str = "", emotion: str = "neutral") -> str:
