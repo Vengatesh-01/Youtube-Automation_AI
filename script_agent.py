@@ -45,6 +45,11 @@ def get_fallback_script(topic_title=None):
         "Text: Character standing on a cliff looking at sunset\n"
         "Image Prompt: Pixar-style 3D animation, Disney cinematic lighting, emotional scene, handsome young man standing on a high cliff looking at glowing sunset\n"
         "Voiceover: Keep going. Your future self is counting on you!\n"
+        "Duration: 5s\n\n"
+        "Scene 6:\n"
+        "Text: Character walking into the light\n"
+        "Image Prompt: Pixar-style 3D animation, Disney cinematic lighting, emotional scene, handsome young man walking into a bright white light, hopeful, final frame\n"
+        "Voiceover: Subscribe for more daily motivation. You've got this!\n"
         "Duration: 5s\n"
     )
 
@@ -68,7 +73,7 @@ def generate_script(topic: dict) -> str:
                 with open(prompt_path, "r", encoding="utf-8") as f:
                     system_rules = f.read()
             else:
-                system_rules = "Create a 5-scene faceless YouTube short optimized for retention."
+                system_rules = "Create a 6-scene faceless YouTube short optimized for retention. Total duration must be 30-60 seconds."
 
             full_prompt = f"{system_rules}\n\nSTRICT TOPIC TO FOCUS ON: {title}"
             

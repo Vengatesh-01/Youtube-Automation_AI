@@ -1,96 +1,124 @@
+"""
+sd_agent.py — Generates Pixar-style scene images using Pollinations AI (free, no API key).
+Each scene uses a character seed for visual consistency within a video.
+"""
 import os
 import time
 import requests
 import subprocess
+import urllib.parse
 from utils import safe_print
 
-try:
-    from dotenv import load_dotenv
-    load_dotenv()
-except ImportError:
-    pass
 
-def generate_local_animation(prompt_text, output_filename, model_name=None):
+def generate_scene_image(prompt: str, output_path: str, seed: int = None) -> bool:
     """
-    Hooks into the Hugging Face Inference API to generate a Stable Diffusion image,
-    and then constructs a 5-second MP4 loop using FFmpeg.
+    Generate a 1080x1920 vertical image from Pollinations AI using Flux model.
+    Falls back to a black frame if the API fails.
     """
-    safe_print(f"[SD_AGENT] Sending prompt to Hugging Face API: {prompt_text[:50]}...")
+    safe_print(f"[SD] Generating scene image (seed={seed})...")
+    os.makedirs(os.path.dirname(os.path.abspath(output_path)), exist_ok=True)
 
-    hf_token = os.environ.get("HF_TOKEN")
-    if not hf_token:
-        safe_print("⚠️ [SD_AGENT] HF_TOKEN is not set. Falling back to dummy generator.")
-        success = False
-    else:
-        # Use SDXL or a high-quality model endpoint on HF
-        hf_api_url = "https://router.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0"
-        headers = {"Authorization": f"Bearer {hf_token}"}
-        
-        payload = {
-            "inputs": prompt_text,
-            "parameters": {
-                "num_inference_steps": 25,
-                "guidance_scale": 7.0
-            }
-        }
+    encoded = urllib.parse.quote(prompt)
+    seed_param = f"&seed={seed}" if seed is not None else ""
+    url = (
+        f"https://image.pollinations.ai/prompt/{encoded}"
+        f"?width=1080&height=1920&model=flux&nologo=true{seed_param}"
+    )
 
-        image_path = f"outputs/temp_sd_{int(time.time())}.png"
-        success = False
-
+    for attempt in range(3):
         try:
-            # Add delay to avoid aggressive rate limiting
-            time.sleep(2)
-            response = requests.post(hf_api_url, headers=headers, json=payload, timeout=60)
-            
-            if response.status_code == 200:
-                with open(image_path, "wb") as f:
+            response = requests.get(url, timeout=90, headers={"User-Agent": "Mozilla/5.0"})
+            if response.status_code == 200 and len(response.content) > 5000:
+                img_path = output_path.replace(".mp4", ".png")
+                with open(img_path, "wb") as f:
                     f.write(response.content)
-                safe_print("[SD_AGENT] Successfully gathered frame from Hugging Face API.")
-                success = True
-            elif response.status_code == 503:
-                # Model is loading
-                safe_print("[SD_AGENT] Model is loading... retrying in 15 seconds.")
-                time.sleep(15)
-                response = requests.post(hf_api_url, headers=headers, json=payload, timeout=60)
-                if response.status_code == 200:
-                    with open(image_path, "wb") as f:
-                        f.write(response.content)
-                    success = True
-                    safe_print("[SD_AGENT] Successfully gathered frame on retry.")
-                else:
-                    safe_print(f"⚠️ [SD_AGENT] API error on retry {response.status_code}: {response.text}")
+                safe_print(f"[SD] Image downloaded: {img_path}")
+                return img_path
             else:
-                safe_print(f"⚠️ [SD_AGENT] API returned error {response.status_code}. Response: {response.text}")
+                safe_print(f"[SD] Attempt {attempt+1} failed: HTTP {response.status_code}")
+                time.sleep(5)
         except Exception as e:
-            safe_print(f"⚠️ [SD_AGENT] Error connecting to HF API: {e}")
+            safe_print(f"[SD] Attempt {attempt+1} error: {e}")
+            time.sleep(5)
 
-    # Fallback to an empty/black frame generation via FFmpeg if REST failed
-    if not success:
-        safe_print("⚠️ [SD_AGENT] Using fallback auto-generation (black screen overlay) due to missing API/Token.")
-    
-    safe_print("[SD_AGENT] Converting structural image slice to 5-second motion video...")
-    os.makedirs(os.path.dirname(os.path.abspath(output_filename)), exist_ok=True)
-    
-    ffmpeg_cmd = [
-        "ffmpeg", "-y",
-        "-loop", "1",
-        "-i", image_path if success else "assets/fallback_bg.png",
-        "-t", "5",
-        "-filter_complex", "scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,zoompan=z='min(zoom+0.0015,1.5)':d=150",
-        "-c:v", "libx264",
-        "-pix_fmt", "yuv420p",
-        output_filename
-    ]
+    safe_print("[SD] All attempts failed. Using fallback black frame.")
+    return None
+
+
+def image_to_video(image_path: str, output_path: str, duration: int = 6, effect: str = "zoom_in") -> bool:
+    """
+    Convert a still image to a video with Ken Burns motion effect using FFmpeg.
+    Effects: zoom_in, zoom_out, pan_left, pan_right
+    """
+    fps = 30
+    frames = fps * duration
+
+    if effect == "zoom_in":
+        zoom = f"'min(1.0+0.0020*on,1.5)'"
+        x = "'iw/2-(iw/zoom/2)'"
+        y = "'ih/2-(ih/zoom/2)'"
+    elif effect == "zoom_out":
+        zoom = f"'max(1.5-0.0020*on,1.0)'"
+        x = "'iw/2-(iw/zoom/2)'"
+        y = "'ih/2-(ih/zoom/2)'"
+    elif effect == "pan_left":
+        zoom = "'1.3'"
+        x = f"'(iw-iw/zoom)*on/{frames}'"
+        y = "'ih/2-(ih/zoom/2)'"
+    else:  # pan_right
+        zoom = "'1.3'"
+        x = f"'(iw-iw/zoom)*(1-on/{frames})'"
+        y = "'ih/2-(ih/zoom/2)'"
+
+    # Scale input up first so zoompan has pixels to work with
+    vf = (
+        f"scale=2160:3840,"
+        f"zoompan=z={zoom}:x={x}:y={y}:d={frames}:s=1080x1920:fps={fps},"
+        f"scale=1080:1920"
+    )
+
+    # Fallback: generate black frame if no image
+    if image_path is None:
+        cmd = [
+            "ffmpeg", "-y",
+            "-f", "lavfi", "-i", "color=c=black:s=1080x1920:r=30",
+            "-t", str(duration),
+            "-c:v", "libx264", "-pix_fmt", "yuv420p",
+            output_path
+        ]
+    else:
+        cmd = [
+            "ffmpeg", "-y",
+            "-loop", "1", "-i", image_path,
+            "-t", str(duration),
+            "-vf", vf,
+            "-c:v", "libx264", "-pix_fmt", "yuv420p",
+            "-r", str(fps),
+            output_path
+        ]
 
     try:
-        subprocess.run(ffmpeg_cmd, capture_output=True, check=True)
-        safe_print(f"✅ [SD_AGENT] Rendered 5s segment successfully: {output_filename}")
-        
-        # Cleanup
-        if success and os.path.exists(image_path):
-            os.remove(image_path)
-            
-        return True
-    except subprocess.CalledProcessError as e:
-        safe_print(f"❌ [SD_AGENT] FFmpeg generation failed: {e}")
+        res = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+        if res.returncode == 0 and os.path.exists(output_path):
+            safe_print(f"[SD] Video segment ready ({effect}): {output_path}")
+            # Cleanup source image
+            if image_path and os.path.exists(image_path):
+                try:
+                    os.remove(image_path)
+                except Exception:
+                    pass
+            return True
+        else:
+            safe_print(f"[SD] FFmpeg error: {res.stderr[-300:]}")
+            return False
+    except Exception as e:
+        safe_print(f"[SD] FFmpeg exception: {e}")
         return False
+
+
+def generate_local_animation(prompt: str, output_path: str, seed: int = None, effect: str = "zoom_in") -> bool:
+    """
+    Main entry point: generate image then convert to animated video segment.
+    """
+    img_path = generate_scene_image(prompt, output_path, seed=seed)
+    return image_to_video(img_path, output_path, duration=6, effect=effect)
