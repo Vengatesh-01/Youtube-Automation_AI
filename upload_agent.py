@@ -31,7 +31,13 @@ def _get_service():
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
             safe_print("Refreshing expired YouTube credentials...")
-            creds.refresh(Request())
+            try:
+                creds.refresh(Request())
+            except Exception as e:
+                safe_print(f"❌ ERROR: Token refresh failed ({e}). Deleting token.json to force re-authentication.")
+                if os.path.exists(TOKEN_FILE):
+                    os.remove(TOKEN_FILE)
+                creds = None
         else:
             # Check for headless environment (e.g., Render)
             is_headless = os.environ.get("RENDER") == "true" or os.environ.get("HEADLESS") == "true"
