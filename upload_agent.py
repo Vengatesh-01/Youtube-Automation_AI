@@ -57,8 +57,9 @@ def _get_service():
                 port=8080, 
                 success_message='Authentication successful! You can safely close this browser tab and return to the terminal.'
             )
-        with open(TOKEN_FILE, "w") as f:
-            f.write(creds.to_json())
+        if creds:
+            with open(TOKEN_FILE, "w") as f:
+                f.write(creds.to_json())
     
     if not creds:
         return None
