@@ -27,7 +27,11 @@ TOKEN_FILE = "token.json"
 def _get_service():
     creds = None
     if os.path.exists(TOKEN_FILE):
-        creds = Credentials.from_authorized_user_file(TOKEN_FILE, SCOPES)
+        try:
+            creds = Credentials.from_authorized_user_file(TOKEN_FILE, SCOPES)
+        except Exception as e:
+            safe_print(f"⚠️ token.json is invalid or empty. Forcing re-authentication.")
+            creds = None
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
             safe_print("Refreshing expired YouTube credentials...")
