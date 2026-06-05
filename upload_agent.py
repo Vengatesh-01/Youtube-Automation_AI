@@ -58,7 +58,7 @@ def _get_service():
             safe_print("Starting OAuth flow (Local Server mode)...")
             flow = InstalledAppFlow.from_client_secrets_file(CLIENT_SECRETS_FILE, SCOPES)
             creds = flow.run_local_server(
-                port=8080, 
+                port=0, 
                 success_message='Authentication successful! You can safely close this browser tab and return to the terminal.'
             )
         if creds:
