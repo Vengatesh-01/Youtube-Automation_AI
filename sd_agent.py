@@ -22,7 +22,7 @@ def generate_scene_image(prompt: str, output_path: str, seed: int = None) -> boo
     seed_param = f"&seed={seed}" if seed is not None else ""
     url = (
         f"https://image.pollinations.ai/prompt/{encoded}"
-        f"?width=1080&height=1920&model=flux&nologo=true{seed_param}"
+        f"?width=1080&height=1920&model=flux{seed_param}"
     )
 
     for attempt in range(3):
