@@ -7,7 +7,7 @@ import time
 import requests
 import subprocess
 import urllib.parse
-from utils import safe_print
+from utils import safe_print, get_ffmpeg
 
 
 def generate_scene_image(prompt: str, output_path: str, seed: int = None) -> bool:
@@ -77,10 +77,11 @@ def image_to_video(image_path: str, output_path: str, duration: int = 6, effect:
         f"scale=1080:1920"
     )
 
+    ffmpeg_exe = get_ffmpeg()
     # Fallback: generate black frame if no image
     if image_path is None:
         cmd = [
-            "ffmpeg", "-y",
+            ffmpeg_exe, "-y",
             "-f", "lavfi", "-i", "color=c=black:s=1080x1920:r=30",
             "-t", str(duration),
             "-c:v", "libx264", "-pix_fmt", "yuv420p",
@@ -88,7 +89,7 @@ def image_to_video(image_path: str, output_path: str, duration: int = 6, effect:
         ]
     else:
         cmd = [
-            "ffmpeg", "-y",
+            ffmpeg_exe, "-y",
             "-loop", "1", "-i", image_path,
             "-t", str(duration),
             "-vf", vf,

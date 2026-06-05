@@ -6,21 +6,10 @@ Concatenates SD-generated scene segments with a voiceover audio track.
 import os
 import subprocess
 import time
-from utils import safe_print as log_agent
+from utils import safe_print as log_agent, get_ffmpeg
 
 
-def _get_ffmpeg():
-    """Resolve ffmpeg binary path — works on both Windows (local) and Linux (Render)."""
-    candidates = [
-        "ffmpeg",                           # system PATH (Linux/Render)
-        r"C:\ffmpeg\bin\ffmpeg.exe",        # common Windows install
-    ]
-    for path in candidates:
-        if path == "ffmpeg":
-            return "ffmpeg"    # trust PATH on Linux
-        if os.path.exists(path):
-            return path
-    return "ffmpeg"             # final fallback
+
 
 
 def create_video(*args, **kwargs):
@@ -55,7 +44,7 @@ def create_video(*args, **kwargs):
         for seg in video_segments:
             f.write(f"file '{os.path.abspath(seg)}'\n")
 
-    ffmpeg = _get_ffmpeg()
+    ffmpeg = get_ffmpeg()
     cmd = [ffmpeg, "-y", "-f", "concat", "-safe", "0", "-i", concat_file]
 
     if voice_file and os.path.exists(voice_file):
