@@ -20,9 +20,14 @@ def generate_scene_image(prompt: str, output_path: str, seed: int = None) -> boo
 
     encoded = urllib.parse.quote(prompt)
     seed_param = f"&seed={seed}" if seed is not None else ""
+    
+    # Get API key if available to bypass 402 rate limits
+    api_key = os.environ.get("POLLINATIONS_API_KEY", "")
+    key_param = f"&key={api_key}" if api_key else ""
+    
     url = (
         f"https://image.pollinations.ai/prompt/{encoded}"
-        f"?width=1080&height=1920&model=flux{seed_param}"
+        f"?width=1080&height=1920&model=flux{seed_param}{key_param}"
     )
 
     for attempt in range(3):
@@ -40,6 +45,19 @@ def generate_scene_image(prompt: str, output_path: str, seed: int = None) -> boo
         except Exception as e:
             safe_print(f"[SD] Attempt {attempt+1} error: {e}")
             time.sleep(5)
+
+    safe_print("[SD] Pollinations failed. Falling back to free placeholder image...")
+    fallback_url = "https://loremflickr.com/1080/1920/animation,3d"
+    try:
+        response = requests.get(fallback_url, timeout=30)
+        if response.status_code == 200:
+            img_path = output_path.replace(".mp4", ".png")
+            with open(img_path, "wb") as f:
+                f.write(response.content)
+            safe_print(f"[SD] Fallback image downloaded: {img_path}")
+            return img_path
+    except Exception as e:
+        safe_print(f"[SD] Fallback also failed: {e}")
 
     safe_print("[SD] All attempts failed. Using fallback black frame.")
     return None
