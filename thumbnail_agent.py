@@ -26,24 +26,32 @@ def _draw_gradient(image, color_start, color_end):
         b = int(color_start[2] + (color_end[2] - color_start[2]) * y / h)
         draw.line([(0, y), (w, y)], fill=(r, g, b))
 
-def generate_pollinations_thumbnail(prompt, output_path):
+def generate_sd_thumbnail(prompt, output_path):
+    hf_token = os.environ.get("HF_TOKEN", "")
+    if not hf_token:
+        safe_print("⚠️ [Thumbnail] HF_TOKEN not found in environment (.env). Skipping SD generation.")
+        return False
+
     enhanced_prompt = (
         f"3D Pixar Disney style animation, highly expressive character showing emotion, "
         f"{prompt}, subsurface scattering, warm volumetric lighting, soft shadows, "
-        "vibrant colors, highly detailed textures, 8k, cinematic composition, 16:9 aspect ratio"
+        "vibrant colors, highly detailed textures, 8k, cinematic composition, 16:9 aspect ratio, horizontal"
     )
-    encoded_prompt = urllib.parse.quote(enhanced_prompt)
-    url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1280&height=720&model=flux&nologo=true"
     
-    headers = {"User-Agent": "Mozilla/5.0"}
+    API_URL = "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0"
+    headers = {"Authorization": f"Bearer {hf_token}"}
+    payload = {"inputs": enhanced_prompt}
+
     try:
-        response = requests.get(url, headers=headers, timeout=60)
-        if response.status_code == 200 and len(response.content) > 5000:
+        response = requests.post(API_URL, headers=headers, json=payload, timeout=60)
+        if response.status_code == 200:
             with open(output_path, 'wb') as f:
                 f.write(response.content)
             return True
+        else:
+            safe_print(f"[Thumbnail] SD API failed: HTTP {response.status_code}")
     except Exception as e:
-        safe_print(f"Thumbnail API failed: {e}")
+        safe_print(f"[Thumbnail] SD API exception: {e}")
     return False
 
 def generate_thumbnail(title: str, category: str = "Trending") -> str:
@@ -57,7 +65,7 @@ def generate_thumbnail(title: str, category: str = "Trending") -> str:
     output_file = os.path.join(OUTPUT_DIR, f"thumbnail_{timestamp}.jpg")
     
     topic_prompt = f"character feeling {category.lower()} or thinking about {title.lower()}"
-    success = generate_pollinations_thumbnail(topic_prompt, temp_img_path)
+    success = generate_sd_thumbnail(topic_prompt, temp_img_path)
     
     if success:
         try:

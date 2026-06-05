@@ -10,43 +10,7 @@ import urllib.parse
 from utils import safe_print, get_ffmpeg
 
 
-def generate_scene_image(prompt: str, output_path: str, seed: int = None) -> bool:
-    """
-    Generate a 1080x1920 vertical image from Pollinations AI using Flux model.
-    Falls back to a black frame if the API fails.
-    """
-    safe_print(f"[SD] Generating scene image (seed={seed})...")
-    os.makedirs(os.path.dirname(os.path.abspath(output_path)), exist_ok=True)
-
-    encoded = urllib.parse.quote(prompt)
-    seed_param = f"&seed={seed}" if seed is not None else ""
-    
-    # Get API key if available to bypass 402 rate limits
-    api_key = os.environ.get("POLLINATIONS_API_KEY", "")
-    key_param = f"&key={api_key}" if api_key else ""
-    
-    url = (
-        f"https://image.pollinations.ai/prompt/{encoded}"
-        f"?width=1080&height=1920&model=flux{seed_param}{key_param}"
-    )
-
-    for attempt in range(3):
-        try:
-            response = requests.get(url, timeout=90, headers={"User-Agent": "Mozilla/5.0"})
-            if response.status_code == 200 and len(response.content) > 5000:
-                img_path = output_path.replace(".mp4", ".png")
-                with open(img_path, "wb") as f:
-                    f.write(response.content)
-                safe_print(f"[SD] Image downloaded: {img_path}")
-                return img_path
-            else:
-                safe_print(f"[SD] Attempt {attempt+1} failed: HTTP {response.status_code}")
-                time.sleep(5)
-        except Exception as e:
-            safe_print(f"[SD] Attempt {attempt+1} error: {e}")
-            time.sleep(5)
-
-    safe_print("[SD] Pollinations failed. Falling back to free placeholder image...")
+def _fallback_image(output_path: str):
     fallback_url = "https://loremflickr.com/1080/1920/animation,3d"
     try:
         response = requests.get(fallback_url, timeout=30)
@@ -58,9 +22,55 @@ def generate_scene_image(prompt: str, output_path: str, seed: int = None) -> boo
             return img_path
     except Exception as e:
         safe_print(f"[SD] Fallback also failed: {e}")
-
     safe_print("[SD] All attempts failed. Using fallback black frame.")
     return None
+
+def generate_scene_image(prompt: str, output_path: str, seed: int = None) -> bool:
+    """
+    Generate an image using Stable Diffusion (via Hugging Face Inference API).
+    Falls back to a stock photo if the API fails or token is missing.
+    """
+    safe_print(f"[SD] Generating scene image (seed={seed}) via Stable Diffusion...")
+    os.makedirs(os.path.dirname(os.path.abspath(output_path)), exist_ok=True)
+
+    hf_token = os.environ.get("HF_TOKEN", "")
+    if not hf_token:
+        safe_print("⚠️ [SD] HF_TOKEN not found in environment (.env).")
+        safe_print("[SD] Stable Diffusion requires a free Hugging Face token. Falling back to placeholder...")
+        return _fallback_image(output_path)
+
+    API_URL = "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0"
+    headers = {"Authorization": f"Bearer {hf_token}"}
+    
+    # SDXL works best when prompted for aspect ratio textually in the free API
+    payload = {
+        "inputs": prompt + ", vertical, 9:16 aspect ratio, high quality, highly detailed",
+    }
+
+    for attempt in range(3):
+        try:
+            response = requests.post(API_URL, headers=headers, json=payload, timeout=120)
+            if response.status_code == 200:
+                img_path = output_path.replace(".mp4", ".png")
+                with open(img_path, "wb") as f:
+                    f.write(response.content)
+                safe_print(f"[SD] Image downloaded successfully: {img_path}")
+                return img_path
+            else:
+                safe_print(f"[SD] Attempt {attempt+1} failed: HTTP {response.status_code}")
+                # Print error reason if available (helps with 'Model is loading' errors)
+                try:
+                    error_msg = response.json()
+                    safe_print(f"     Reason: {error_msg}")
+                except:
+                    pass
+                time.sleep(15)
+        except Exception as e:
+            safe_print(f"[SD] Attempt {attempt+1} error: {e}")
+            time.sleep(15)
+
+    safe_print("[SD] Stable Diffusion failed. Falling back to free placeholder image...")
+    return _fallback_image(output_path)
 
 
 def image_to_video(image_path: str, output_path: str, duration: int = 6, effect: str = "zoom_in") -> bool:
