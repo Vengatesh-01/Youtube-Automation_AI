@@ -27,15 +27,23 @@ TOKEN_FILE = "token.json"
 def _get_service():
     creds = None
 
+    # On Render: write client_secrets.json from environment variable if missing
+    if not os.path.exists(CLIENT_SECRETS_FILE):
+        secrets_env = os.environ.get("YOUTUBE_CLIENT_SECRETS", "")
+        if secrets_env:
+            safe_print("[YouTube] Writing client_secrets.json from environment variable...")
+            with open(CLIENT_SECRETS_FILE, "w") as f:
+                f.write(secrets_env)
+
     # On Render: write token.json from environment variable if file is missing
     if not os.path.exists(TOKEN_FILE):
-        token_env = os.environ.get("YOUTUBE_TOKEN_JSON", "")
+        token_env = os.environ.get("YOUTUBE_TOKEN", "")
         if token_env:
-            safe_print("[YouTube] Writing token.json from environment variable...")
+            safe_print("[YouTube] Writing token.json from YOUTUBE_TOKEN env var...")
             with open(TOKEN_FILE, "w") as f:
                 f.write(token_env)
         else:
-            safe_print("⚠️ [YouTube] No token.json file and no YOUTUBE_TOKEN_JSON env var found.")
+            safe_print("⚠️ [YouTube] No token.json and no YOUTUBE_TOKEN env var found.")
 
     if os.path.exists(TOKEN_FILE):
         try:
