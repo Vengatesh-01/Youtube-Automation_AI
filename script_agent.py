@@ -130,10 +130,6 @@ def generate_script(topic: dict) -> str:
         f.write(script_text)
 
     safe_print(f"[SUCCESS] Script saved to {script_file}")
-    
-    # Optional: Auto-sync to cloud if running in auto-mode
-    if os.environ.get("AUTO_SYNC_TO_CLOUD") == "true":
-        sync_to_github()
         
     return script_file
 
