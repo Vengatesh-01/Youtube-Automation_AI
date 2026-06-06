@@ -295,11 +295,11 @@ def run_pipeline():
             # Rotate through the 3 characters
             current_char = character_pool[i % len(character_pool)]
             
-            # Enhance prompt with current character description
-            enhanced_prompt = f"Pixar 3D Disney animation style, {current_char['visual']}, {prompt}"
+            # Enhance prompt using ONLY the Gemini script context + Pixar style
+            enhanced_prompt = f"Pixar 3D Disney animation style, {prompt}"
             effect = random.choice(effects)
             
-            log(f"Rendering scene {i+1}/{len(image_prompts)} with {current_char['name']}: {enhanced_prompt[:40]}... (Effect: {effect})")
+            log(f"Rendering scene {i+1}/{len(image_prompts)}: {enhanced_prompt[:40]}... (Effect: {effect})")
             if generate_local_animation(enhanced_prompt, seg_path, seed=current_char['seed'], effect=effect):
                 video_segments.append(seg_path)
 
@@ -324,6 +324,25 @@ def run_pipeline():
         # Optional YouTube Upload
         if ENABLE_UPLOAD:
             log("Final Phase — Uploading to YouTube...")
+            
+            # --- Schedule Publish Time (8 AM / 8 PM Local) ---
+            now_local = datetime.now()
+            target_am = now_local.replace(hour=8, minute=0, second=0, microsecond=0)
+            target_pm = now_local.replace(hour=20, minute=0, second=0, microsecond=0)
+            
+            if now_local < target_am:
+                target = target_am
+            elif now_local < target_pm:
+                target = target_pm
+            else:
+                target = (now_local + timedelta(days=1)).replace(hour=8, minute=0, second=0, microsecond=0)
+                
+            local_tz = now_local.astimezone().tzinfo
+            target_aware = target.replace(tzinfo=local_tz)
+            utc_target = target_aware.astimezone(timezone.utc)
+            publish_time = utc_target.strftime("%Y-%m-%dT%H:%M:%SZ")
+            log(f"⏰ Scheduling YouTube publish time for: {publish_time} (Target local: {target.strftime('%Y-%m-%d %H:%M')})")
+
             # SEO Metadata
             seo_tags = topic.get("tags", ["shorts", "ai", "trending"])
             seo_description = f"{full_script_text[:200]}...\n\n#Shorts #AI #Topic:{topic['title']}"
@@ -333,7 +352,8 @@ def run_pipeline():
                 title=f"{topic['title']} #Shorts", 
                 description=seo_description, 
                 thumbnail_file=thumbnail_file,
-                tags=seo_tags
+                tags=seo_tags,
+                publish_at=publish_time
             )
             log(f"✅ Uploaded: {url}")
         else:
