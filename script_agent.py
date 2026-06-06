@@ -61,11 +61,8 @@ def generate_script(topic: dict) -> str:
     script_text = ""
     api_key = os.environ.get("GEMINI_API_KEY")
     
-    # Try using Gemini API
-    if api_key:
         try:
-            from google import genai
-            client = genai.Client(api_key=api_key)
+            import requests
             
             prompt_path = os.path.join(os.path.dirname(__file__), "prompts", "gemini_system.txt")
             if os.path.exists(prompt_path):
@@ -76,10 +73,10 @@ def generate_script(topic: dict) -> str:
                     "You are a master YouTube Shorts scriptwriter whose videos regularly get 1M+ views. "
                     "Write a 6-scene faceless video script optimized for MAXIMUM viewer retention and virality. "
                     "RULES:\n"
-                    "1. The first 3 seconds MUST have a 'hook' that makes it impossible to scroll away (use curiosity gaps, controversy, or shocking facts).\n"
+                    "1. The first 3 seconds MUST have a 'hook' that makes it impossible to scroll away.\n"
                     "2. The pacing must be fast, aggressive, and highly engaging.\n"
-                    "3. Each scene must have an 'Image Prompt' describing a Pixar 3D style cinematic visual to match the narration.\n"
-                    "4. The final scene must loop perfectly back to the beginning hook to force re-watches.\n"
+                    "3. Each scene must have an 'Image Prompt' describing a Pixar 3D style cinematic visual.\n"
+                    "4. The final scene must loop perfectly back to the beginning hook.\n"
                     "Total duration must be 30-60 seconds."
                 )
 
@@ -89,8 +86,7 @@ def generate_script(topic: dict) -> str:
                 "Make it highly philosophical, stoic, and deeply thought-provoking.",
                 "Make it an aggressive, high-energy motivational wake-up call.",
                 "Make it a spooky, mysterious 'dark psychology' secret.",
-                "Make it a highly relatable everyday scenario that blows the viewer's mind.",
-                "Make it a historical anecdote about a powerful leader's secret tactic."
+                "Make it a highly relatable everyday scenario that blows the viewer's mind."
             ]
             chosen_angle = random.choice(creative_angles)
             
@@ -98,26 +94,36 @@ def generate_script(topic: dict) -> str:
                 f"{system_rules}\n\n"
                 f"STRICT TOPIC TO FOCUS ON: {title}\n"
                 f"CREATIVE DIRECTION: {chosen_angle}\n\n"
-                f"CRITICAL REQUIREMENT: Do NOT repeat old scripts. Invent completely new scenes, new dialogue, and a unique storyline for this video. It must feel 100% fresh and unique."
+                f"CRITICAL REQUIREMENT: Do NOT repeat old scripts. Invent completely new scenes and a unique storyline."
             )
             
-            safe_print(f"[SCRIPT] Calling Gemini API (Angle: {chosen_angle[:40]}...).")
-            response = client.models.generate_content(
-                model='gemini-2.0-flash',
-                contents=full_prompt
-            )
-            if response and response.text:
-                script_text = response.text.strip()
-                safe_print("[SCRIPT] Successfully retrieved script from Gemini.")
+            safe_print(f"[SCRIPT] Calling Gemini REST API (Angle: {chosen_angle[:40]}...).")
+            
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}"
+            payload = {
+                "contents": [{"parts": [{"text": full_prompt}]}]
+            }
+            
+            # STRICT TIMEOUT: 15 SECONDS. If it hangs, it will abort and fallback!
+            response = requests.post(url, json=payload, headers={'Content-Type': 'application/json'}, timeout=15)
+            
+            if response.status_code == 200:
+                data = response.json()
+                try:
+                    script_text = data['candidates'][0]['content']['parts'][0]['text'].strip()
+                    safe_print("[SCRIPT] Successfully retrieved script from Gemini REST API.")
+                except KeyError:
+                    safe_print("[SCRIPT] Gemini returned malformed JSON. Using fallback.")
+                    script_text = get_fallback_script(title)
             else:
-                safe_print("[SCRIPT] Gemini returned empty response. Using fallback.")
+                safe_print(f"[SCRIPT] Gemini REST API error HTTP {response.status_code}. Using fallback.")
                 script_text = get_fallback_script(title)
         
-        except ImportError:
-            safe_print("⚠️ [SCRIPT] google-genai module not installed. Falling back.")
+        except requests.exceptions.Timeout:
+            safe_print("⚠️ [SCRIPT] Gemini API timed out after 15 seconds! Falling back immediately.")
             script_text = get_fallback_script(title)
         except Exception as e:
-            safe_print(f"⚠️ [SCRIPT] Gemini API error: {e}. Falling back.")
+            safe_print(f"⚠️ [SCRIPT] Gemini REST API exception: {e}. Falling back.")
             script_text = get_fallback_script(title)
     else:
         safe_print("⚠️ [SCRIPT] GEMINI_API_KEY not found in environment. Using fallback.")
