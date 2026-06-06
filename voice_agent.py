@@ -14,7 +14,7 @@ def _synthesize_edge_tts(text: str, output_file: str, output_vtt: str, voice: st
     """Generate voiceover using Microsoft Edge TTS CLI to get subtitles."""
     try:
         import subprocess
-        voice_to_use = voice if voice else VOICE
+        voice_to_use = voice if voice else "en-US-ChristopherNeural"
         cmd = [
             "edge-tts",
             "--text", text,
@@ -22,7 +22,7 @@ def _synthesize_edge_tts(text: str, output_file: str, output_vtt: str, voice: st
             "--write-media", output_file,
             "--write-subtitles", output_vtt
         ]
-        res = subprocess.run(cmd, capture_output=True, text=True)
+        res = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
         if res.returncode == 0 and os.path.exists(output_file):
             safe_print(f"[VOICE] Edge TTS success: {output_file}")
             return True
