@@ -60,7 +60,7 @@ def generate_script(topic: dict) -> str:
 
     script_text = ""
     api_key = os.environ.get("GEMINI_API_KEY")
-    
+    if api_key:
         try:
             import requests
             
