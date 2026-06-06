@@ -10,26 +10,29 @@ from datetime import datetime
 from utils import safe_print
 
 
+import edge_tts
+
+async def _amain_edge_tts(text: str, output_file: str, voice: str):
+    communicate = edge_tts.Communicate(text, voice)
+    await communicate.save(output_file)
+
 def _synthesize_edge_tts(text: str, output_file: str, output_vtt: str, voice: str = None) -> bool:
-    """Generate voiceover using Microsoft Edge TTS CLI to get subtitles."""
+    """Generate voiceover using native edge_tts python library."""
     try:
-        import subprocess
         voice_to_use = voice if voice else "en-US-ChristopherNeural"
-        cmd = [
-            "edge-tts",
-            "--text", text,
-            "--voice", voice_to_use,
-            "--write-media", output_file,
-            "--write-subtitles", output_vtt
-        ]
-        res = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=45)
-        if res.returncode == 0 and os.path.exists(output_file):
-            safe_print(f"[VOICE] Edge TTS success: {output_file}")
+        # Run the async function synchronously with a strict 45-second timeout
+        asyncio.run(asyncio.wait_for(_amain_edge_tts(text, output_file, voice_to_use), timeout=45.0))
+        if os.path.exists(output_file):
+            safe_print(f"[VOICE] Edge TTS native success: {output_file}")
+            # Note: native edge_tts communicate.save() doesn't write VTT by default.
+            # We don't actually need VTT for the pipeline since FFmpeg assembly ignores it.
             return True
-        safe_print(f"[VOICE] Edge TTS failed: {res.stderr}")
+        return False
+    except asyncio.TimeoutError:
+        safe_print("[VOICE] Edge TTS native timed out after 45 seconds!")
         return False
     except Exception as e:
-        safe_print(f"[VOICE] Edge TTS exception: {e}")
+        safe_print(f"[VOICE] Edge TTS native exception: {e}")
         return False
 
 
