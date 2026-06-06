@@ -17,12 +17,16 @@ NICHES = [
 ]
 
 FALLBACK_TOPICS = [
-    {"title": "The Eyes Never Lie", "description": "How to detect a lie instantly by watching pupil dilation.", "category": "Dark Psychology Secrets"},
-    {"title": "The Power of Silence", "description": "Why the most powerful person in the room speaks the least.", "category": "Social Dynamics & Power"},
-    {"title": "Detecting Fake Smiles", "description": "The 'crows-feet' secret that separates truth from lies.", "category": "Body Language Mastery"},
-    {"title": "Mental Invincibility", "description": "How to build a mind that no one else can break.", "category": "Mental Resilience & Stoicism"},
-    {"title": "The 1% Morning", "description": "The exact habits that separate world-class achievers from the rest.", "category": "High-Performance Habits"},
-    {"title": "The Mirroring Trap", "description": "If they copy your movements, they want something from you.", "category": "Influence & Persuasion Tricks"}
+    {"title": "The 3-Second Psychological Trick to Make Anyone Respect You instantly", "description": "A dark psychology hack used by billionaires.", "category": "Social Dynamics & Power"},
+    {"title": "They Are Lying to You: The Eye-Contact Test", "description": "How to catch a liar using the 'triangle method'.", "category": "Body Language Mastery"},
+    {"title": "The 'Dark Empath' Personality Explained", "description": "The most dangerous personality type in the room.", "category": "Dark Psychology Secrets"},
+    {"title": "Why 99% of People Fail (And How to Be the 1%)", "description": "The brutal truth about success and stoicism.", "category": "Mental Resilience & Stoicism"},
+    {"title": "The 'Mirroring' Manipulation Tactic", "description": "How to spot when someone is trying to control your mind.", "category": "Influence & Persuasion Tricks"},
+    {"title": "Stop Being Nice: The 'Law of Power' They Don't Want You to Know", "description": "Why highly agreeable people always finish last.", "category": "High-Performance Habits"},
+    {"title": "The 'Silence Strategy' That Makes People Obsess Over You", "description": "Why the less you say, the more powerful you seem.", "category": "Social Dynamics & Power"},
+    {"title": "How to Read Minds in 5 Seconds", "description": "Micro-expressions that reveal exactly what someone is thinking.", "category": "Body Language Mastery"},
+    {"title": "The Japanese Secret to Mental Invincibility (Kaizen)", "description": "How to build a mind that cannot be broken.", "category": "Mental Resilience & Stoicism"},
+    {"title": "The Toxic 'Love Bombing' Trap", "description": "How to identify manipulation before it destroys you.", "category": "Dark Psychology Secrets"}
 ]
 
 def generate_topics(count: int = 5) -> list:

@@ -72,11 +72,36 @@ def generate_script(topic: dict) -> str:
                 with open(prompt_path, "r", encoding="utf-8") as f:
                     system_rules = f.read()
             else:
-                system_rules = "Create a 6-scene faceless YouTube short optimized for retention. Total duration must be 30-60 seconds."
+                system_rules = (
+                    "You are a master YouTube Shorts scriptwriter whose videos regularly get 1M+ views. "
+                    "Write a 6-scene faceless video script optimized for MAXIMUM viewer retention and virality. "
+                    "RULES:\n"
+                    "1. The first 3 seconds MUST have a 'hook' that makes it impossible to scroll away (use curiosity gaps, controversy, or shocking facts).\n"
+                    "2. The pacing must be fast, aggressive, and highly engaging.\n"
+                    "3. Each scene must have an 'Image Prompt' describing a Pixar 3D style cinematic visual to match the narration.\n"
+                    "4. The final scene must loop perfectly back to the beginning hook to force re-watches.\n"
+                    "Total duration must be 30-60 seconds."
+                )
 
-            full_prompt = f"{system_rules}\n\nSTRICT TOPIC TO FOCUS ON: {title}"
+            import random
+            creative_angles = [
+                "Make it an intense, fast-paced psychological thriller short.",
+                "Make it highly philosophical, stoic, and deeply thought-provoking.",
+                "Make it an aggressive, high-energy motivational wake-up call.",
+                "Make it a spooky, mysterious 'dark psychology' secret.",
+                "Make it a highly relatable everyday scenario that blows the viewer's mind.",
+                "Make it a historical anecdote about a powerful leader's secret tactic."
+            ]
+            chosen_angle = random.choice(creative_angles)
             
-            safe_print("[SCRIPT] Calling Gemini API for script generation...")
+            full_prompt = (
+                f"{system_rules}\n\n"
+                f"STRICT TOPIC TO FOCUS ON: {title}\n"
+                f"CREATIVE DIRECTION: {chosen_angle}\n\n"
+                f"CRITICAL REQUIREMENT: Do NOT repeat old scripts. Invent completely new scenes, new dialogue, and a unique storyline for this video. It must feel 100% fresh and unique."
+            )
+            
+            safe_print(f"[SCRIPT] Calling Gemini API (Angle: {chosen_angle[:40]}...).")
             response = client.models.generate_content(
                 model='gemini-2.0-flash',
                 contents=full_prompt
