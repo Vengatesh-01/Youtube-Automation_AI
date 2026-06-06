@@ -26,24 +26,7 @@ FALLBACK_TOPICS = [
 ]
 
 def generate_topics(count: int = 5) -> list:
-    """Fetch trending topics or return niche-specific fallbacks."""
-    url = "https://trends.google.com/trends/trendingsearches/daily/rss?geo=US"
-    topics = []
-    try:
-        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-        response = urllib.request.urlopen(req, timeout=10)
-        root = ET.fromstring(response.read())
-        for item in root.findall(".//item")[:count]:
-            title = item.find("title").text
-            desc_elem = item.find("description")
-            description = desc_elem.text if desc_elem is not None else f"Trending topic: {title}"
-            # Assign a random niche for variety
-            topics.append({"title": title, "description": description, "category": random.choice(NICHES)})
-        if topics:
-            return topics
-    except Exception as e:
-        safe_print(f"Google Trends unavailable ({e}), using fallback topics.")
-    
+    """Fetch niche-specific fallbacks (Google Trends RSS is deprecated and hangs on Render)."""
     # Mix fallbacks with random niche assignments
     all_fallbacks = FALLBACK_TOPICS.copy()
     random.shuffle(all_fallbacks)
