@@ -112,7 +112,7 @@ def image_to_video(image_path: str, output_path: str, duration: int = 6, effect:
             ffmpeg_exe, "-y", "-nostdin",
             "-f", "lavfi", "-i", "color=c=black:s=1080x1920:r=30",
             "-t", str(duration),
-            "-c:v", "libx264", "-pix_fmt", "yuv420p",
+            "-c:v", "libx264", "-preset", "ultrafast", "-threads", "1", "-pix_fmt", "yuv420p",
             output_path
         ]
     else:
@@ -121,7 +121,7 @@ def image_to_video(image_path: str, output_path: str, duration: int = 6, effect:
             "-loop", "1", "-i", image_path,
             "-t", str(duration),
             "-vf", vf,
-            "-c:v", "libx264", "-pix_fmt", "yuv420p",
+            "-c:v", "libx264", "-preset", "ultrafast", "-threads", "1", "-pix_fmt", "yuv420p",
             "-r", str(fps),
             output_path
         ]

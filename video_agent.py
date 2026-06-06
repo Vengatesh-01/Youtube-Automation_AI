@@ -50,7 +50,7 @@ def create_video(*args, **kwargs):
     if voice_file and os.path.exists(voice_file):
         cmd.extend(["-i", voice_file])
 
-    cmd.extend(["-c:v", "libx264", "-c:a", "aac", "-b:a", "192k", "-shortest"])
+    cmd.extend(["-c:v", "libx264", "-preset", "ultrafast", "-threads", "1", "-c:a", "aac", "-b:a", "192k", "-shortest"])
     cmd.append(output_video)
 
     log_agent(f"Running: ffmpeg concat -> {output_video}")
