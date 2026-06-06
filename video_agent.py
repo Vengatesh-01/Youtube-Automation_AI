@@ -55,7 +55,7 @@ def create_video(*args, **kwargs):
 
     log_agent(f"Running: ffmpeg concat -> {output_video}")
     try:
-        res = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
+        res = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=300)
     except subprocess.TimeoutExpired:
         log_agent("❌ FFmpeg timed out after 300 seconds!")
         return None

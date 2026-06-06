@@ -127,7 +127,7 @@ def image_to_video(image_path: str, output_path: str, duration: int = 6, effect:
         ]
 
     try:
-        res = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+        res = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=120)
         if res.returncode == 0 and os.path.exists(output_path):
             safe_print(f"[SD] Video segment ready ({effect}): {output_path}")
             # Cleanup source image

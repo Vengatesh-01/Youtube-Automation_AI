@@ -22,7 +22,7 @@ def _synthesize_edge_tts(text: str, output_file: str, output_vtt: str, voice: st
             "--write-media", output_file,
             "--write-subtitles", output_vtt
         ]
-        res = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+        res = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=45)
         if res.returncode == 0 and os.path.exists(output_file):
             safe_print(f"[VOICE] Edge TTS success: {output_file}")
             return True
@@ -46,7 +46,7 @@ def _synthesize_silence(output_file: str, duration: int = 30) -> bool:
             "-acodec", "libmp3lame",
             output_file
         ]
-        res = subprocess.run(cmd, capture_output=True, timeout=30)
+        res = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=15)
         return res.returncode == 0
     except Exception as e:
         safe_print(f"[VOICE] Silence fallback failed: {e}")
