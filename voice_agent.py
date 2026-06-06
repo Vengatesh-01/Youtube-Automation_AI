@@ -38,7 +38,7 @@ def _synthesize_silence(output_file: str, duration: int = 30) -> bool:
     try:
         import subprocess
         cmd = [
-            "ffmpeg", "-y",
+            "ffmpeg", "-y", "-nostdin",
             "-f", "lavfi",
             "-i", f"anullsrc=r=44100:cl=mono",
             "-t", str(duration),
@@ -46,7 +46,7 @@ def _synthesize_silence(output_file: str, duration: int = 30) -> bool:
             "-acodec", "libmp3lame",
             output_file
         ]
-        res = subprocess.run(cmd, capture_output=True)
+        res = subprocess.run(cmd, capture_output=True, timeout=30)
         return res.returncode == 0
     except Exception as e:
         safe_print(f"[VOICE] Silence fallback failed: {e}")

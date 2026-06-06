@@ -109,7 +109,7 @@ def image_to_video(image_path: str, output_path: str, duration: int = 6, effect:
     # Fallback: generate black frame if no image
     if image_path is None:
         cmd = [
-            ffmpeg_exe, "-y",
+            ffmpeg_exe, "-y", "-nostdin",
             "-f", "lavfi", "-i", "color=c=black:s=1080x1920:r=30",
             "-t", str(duration),
             "-c:v", "libx264", "-pix_fmt", "yuv420p",
@@ -117,7 +117,7 @@ def image_to_video(image_path: str, output_path: str, duration: int = 6, effect:
         ]
     else:
         cmd = [
-            ffmpeg_exe, "-y",
+            ffmpeg_exe, "-y", "-nostdin",
             "-loop", "1", "-i", image_path,
             "-t", str(duration),
             "-vf", vf,

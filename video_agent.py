@@ -45,7 +45,7 @@ def create_video(*args, **kwargs):
             f.write(f"file '{os.path.abspath(seg)}'\n")
 
     ffmpeg = get_ffmpeg()
-    cmd = [ffmpeg, "-y", "-f", "concat", "-safe", "0", "-i", concat_file]
+    cmd = [ffmpeg, "-y", "-nostdin", "-f", "concat", "-safe", "0", "-i", concat_file]
 
     if voice_file and os.path.exists(voice_file):
         cmd.extend(["-i", voice_file])
@@ -54,7 +54,11 @@ def create_video(*args, **kwargs):
     cmd.append(output_video)
 
     log_agent(f"Running: ffmpeg concat -> {output_video}")
-    res = subprocess.run(cmd, capture_output=True, text=True)
+    try:
+        res = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
+    except subprocess.TimeoutExpired:
+        log_agent("❌ FFmpeg timed out after 300 seconds!")
+        return None
 
     # Cleanup temp concat list
     try:
