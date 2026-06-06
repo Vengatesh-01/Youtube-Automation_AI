@@ -11,5 +11,5 @@ tqdm
 flask
 psutil
 uritemplate
-google-generativeai
+google-genai
 gunicorn

@@ -64,9 +64,8 @@ def generate_script(topic: dict) -> str:
     # Try using Gemini API
     if api_key:
         try:
-            import google.generativeai as genai
-            genai.configure(api_key=api_key)
-            model = genai.GenerativeModel('gemini-1.5-flash')
+            from google import genai
+            client = genai.Client(api_key=api_key)
             
             prompt_path = os.path.join(os.path.dirname(__file__), "prompts", "gemini_system.txt")
             if os.path.exists(prompt_path):
@@ -78,7 +77,10 @@ def generate_script(topic: dict) -> str:
             full_prompt = f"{system_rules}\n\nSTRICT TOPIC TO FOCUS ON: {title}"
             
             safe_print("[SCRIPT] Calling Gemini API for script generation...")
-            response = model.generate_content(full_prompt)
+            response = client.models.generate_content(
+                model='gemini-2.0-flash',
+                contents=full_prompt
+            )
             if response and response.text:
                 script_text = response.text.strip()
                 safe_print("[SCRIPT] Successfully retrieved script from Gemini.")
@@ -87,7 +89,7 @@ def generate_script(topic: dict) -> str:
                 script_text = get_fallback_script(title)
         
         except ImportError:
-            safe_print("⚠️ [SCRIPT] google-generativeai module not installed. Falling back.")
+            safe_print("⚠️ [SCRIPT] google-genai module not installed. Falling back.")
             script_text = get_fallback_script(title)
         except Exception as e:
             safe_print(f"⚠️ [SCRIPT] Gemini API error: {e}. Falling back.")
