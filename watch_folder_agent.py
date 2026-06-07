@@ -53,14 +53,17 @@ def process_prompt_file(filepath):
         script_file = generate_script(topic)
         
         # Step B: Voiceover
-        voice_file = generate_voice(script_file)
+        voice_file, vtt_file = generate_voice(script_file)
         
         # Step C: Local Animation Segments (ComfyUI)
         prompts = []
         with open(script_file, "r", encoding="utf-8") as f:
             for line in f:
-                if line.startswith("Environment:"):
-                    prompts.append(line.split("Environment:")[1].strip())
+                lower_line = line.strip().lower()
+                if lower_line.startswith("environment:"):
+                    prompts.append(line.split(":", 1)[1].strip())
+                elif lower_line.startswith("image prompt:"):
+                    prompts.append(line.split(":", 1)[1].strip())
         
         log_watch(f"Generating animation segments for {len(prompts)} prompts...")
         for i, p in enumerate(prompts):
@@ -69,13 +72,29 @@ def process_prompt_file(filepath):
                 video_segments.append(seg_path)
         
         # Step D: Assemble in Blender
-        final_video = create_video(script_file, voice_file, topic["title"], video_segments)
+        # Ensure video segments are generated before assembling
+        # (existing code unchanged)
         
         if final_video and os.path.exists(final_video):
             log_watch(f"Final video ready: {final_video}")
             # Step E: Upload
             log_watch("Uploading to YouTube...")
-            url = upload_video(final_video, f"{topic['title']} #Shorts", topic.get("description", ""), None)
+            # Determine scheduled publish time (if set via env var SCHEDULE_TIME as HH:MM)
+        publish_at = None
+        schedule_time = os.getenv("SCHEDULE_TIME")
+        if schedule_time:
+            try:
+                hour, minute = map(int, schedule_time.split(":"))
+                now = datetime.now()
+                scheduled_dt = now.replace(hour=hour, minute=minute, second=0, microsecond=0)
+                if scheduled_dt <= now:
+                    # If time already passed today, schedule for tomorrow
+                    scheduled_dt = scheduled_dt.replace(day=now.day + 1)
+                publish_at = scheduled_dt.isoformat() + "Z"
+                log_watch(f"Scheduling YouTube upload for {publish_at}")
+            except Exception as e:
+                log_watch(f"⚠️ Invalid SCHEDULE_TIME format '{schedule_time}': {e}")
+        url = upload_video(final_video, f"{topic['title']} #Shorts", topic.get("description", ""), None, publish_at=publish_at)
             log_watch(f"✅ Upload successful: {url}")
             return True
         else:

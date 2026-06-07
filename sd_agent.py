@@ -8,6 +8,13 @@ import requests
 import subprocess
 import urllib.parse
 from utils import safe_print, get_ffmpeg
+# Load environment variables from a .env file if present (e.g., HF_TOKEN)
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    # dotenv is optional; if not installed we simply skip loading .env
+    pass
 
 
 def _fallback_image(output_path: str):
@@ -39,7 +46,14 @@ def generate_scene_image(prompt: str, output_path: str, seed: int = None) -> boo
         safe_print("[SD] Stable Diffusion requires a free Hugging Face token. Falling back to placeholder...")
         return _fallback_image(output_path)
 
-    API_URL = "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0"
+    # Prefer a local Stable Diffusion server if configured via LOCAL_SD_URL.
+    local_sd_url = os.getenv("LOCAL_SD_URL")
+    if local_sd_url:
+        API_URL = local_sd_url
+        safe_print("[SD] Using local Stable Diffusion endpoint from LOCAL_SD_URL.")
+    else:
+        API_URL = "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0"
+
     headers = {"Authorization": f"Bearer {hf_token}"}
     
     # SDXL works best when prompted for aspect ratio textually in the free API

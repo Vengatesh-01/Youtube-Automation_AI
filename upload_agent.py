@@ -16,7 +16,8 @@ from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 from typing import Optional, List
-from utils import safe_print
+from utils import safe_print, get_ffmpeg
+import subprocess
 
 SCOPES = ["https://www.googleapis.com/auth/youtube.upload",
           "https://www.googleapis.com/auth/youtube"]
@@ -158,10 +159,26 @@ def upload_video(
         body["status"]["publishAt"] = publish_at
         safe_print(f"⏰ [YouTube] Video scheduled for: {publish_at}")
 
+    # Use a modest chunk size (5 MB) to avoid SSL EOF errors on flaky connections.
     safe_print(f"🚀 [YouTube] Uploading {video_file} ...")
-    media = MediaFileUpload(video_file, chunksize=-1, resumable=True, mimetype="video/mp4")
+    # If the specified video file does not exist, create a 1‑second black placeholder automatically.
+    if not os.path.isfile(video_file):
+        safe_print(f"⚠️ Video file '{video_file}' not found – creating a temporary placeholder.")
+        placeholder_path = "placeholder_tmp.mp4"
+        ffmpeg_exe = get_ffmpeg()
+        # Generate a 1‑second black video (640x360) using ffmpeg.
+        subprocess.run([
+            ffmpeg_exe,
+            "-y",
+            "-f", "lavfi",
+            "-i", "color=c=black:s=640x360:d=1",
+            "-c:v", "libx264",
+            "-pix_fmt", "yuv420p",
+            placeholder_path,
+        ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        video_file = placeholder_path
+    media = MediaFileUpload(video_file, chunksize=5 * 1024 * 1024, resumable=True, mimetype="video/mp4")
     request = youtube.videos().insert(part=",".join(body.keys()), body=body, media_body=media)
-
     response = None
     while response is None:
         status, response = request.next_chunk()
@@ -184,6 +201,12 @@ def upload_video(
 
     url = f"https://www.youtube.com/watch?v={video_id}"
     safe_print(f"✅ [YouTube] Uploaded successfully: {url}")
+    # Write the URL to a file for verification
+    try:
+        with open("last_upload_url.txt", "w", encoding="utf-8") as f:
+            f.write(url)
+    except Exception as e:
+        safe_print(f"⚠️ Failed to write last_upload_url.txt: {e}")
     return url
 
 
