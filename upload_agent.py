@@ -115,8 +115,7 @@ def upload_video(
         bool(os.environ.get("YOUTUBE_CLIENT_SECRETS")) or 
         bool(os.environ.get("YOUTUBE_TOKEN"))
     )
-    
-
+    if not has_credentials:
         safe_print("📢 [YouTube] INFO: client_secrets.json or token.json not found.")
         safe_print("⚙️ To enable uploads, provide valid credentials or run this script locally once.")
         return None
