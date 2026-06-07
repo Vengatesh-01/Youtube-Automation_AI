@@ -108,20 +108,35 @@ def upload_video(
     if tags is None:
         tags = ["automation", "trending"]
 
-    # Check for credentials before starting
-    has_credentials = os.path.exists(CLIENT_SECRETS_FILE) or os.path.exists(TOKEN_FILE)
+    # Check for credentials before starting (files or environment variables)
+    has_credentials = (
+        os.path.exists(CLIENT_SECRETS_FILE) or 
+        os.path.exists(TOKEN_FILE) or 
+        bool(os.environ.get("YOUTUBE_CLIENT_SECRETS")) or 
+        bool(os.environ.get("YOUTUBE_TOKEN"))
+    )
     
     if not has_credentials:
-        safe_print("📢 [YouTube] Info: client_secrets.json not found. YouTube upload is DISABLED.")
-        safe_print("To enable automatic YouTube uploads, follow these steps:")
-        safe_print("  1. Go to Google Cloud Console (https://console.cloud.google.com/)")
-        safe_print("  2. Create a project")
-        safe_print("  3. Enable the 'YouTube Data API v3'")
-        safe_print("  4. Create OAuth 2.0 Client ID credentials (type: Desktop App)")
-        safe_print("  5. Download the credentials JSON file")
-        safe_print("  6. Rename it to 'client_secrets.json'")
-        safe_print("  7. Place it in the project root directory")
-        safe_print(f"🎬 [YouTube] Video saved locally: {video_file}")
+
+
+    if not has_credentials:
+        safe_print("📢 [YouTube] INFO: client_secrets.json or token.json not found.")
+        safe_print("⚙️ To enable uploads, provide valid credentials or run this script locally once.")
+        return None
+
+    # If token file missing, try to create it from env var
+    if not os.path.exists(TOKEN_FILE):
+        token_env = os.environ.get("YOUTUBE_TOKEN")
+        if token_env:
+            safe_print("[YouTube] Writing token.json from YOUTUBE_TOKEN env var...")
+            with open(TOKEN_FILE, "w") as f:
+                f.write(token_env)
+
+    # Detect headless environment – cannot launch OAuth UI
+    is_headless = os.environ.get("RENDER") == "true" or os.environ.get("HEADLESS") == "true"
+    if is_headless and not os.path.exists(TOKEN_FILE):
+        safe_print("❌ [YouTube] HEADLESS environment – cannot perform OAuth flow.")
+        safe_print("🔑 Provide a valid YOUTUBE_TOKEN env var or upload a pre‑generated token.json.")
         return None
 
     safe_print("📢 [YouTube] Uploading enabled. Authenticating...")

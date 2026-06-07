@@ -1,7 +1,7 @@
 import os
 import json
 import time
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from topic_agent import generate_topics
 from script_agent import generate_script
 from voice_agent import generate_voice
@@ -30,21 +30,25 @@ def parse_prompts_from_script(script_file):
         lines = f.readlines()
         for line in lines:
             trimmed = line.strip()
-            if trimmed.lower().startswith("environment:"):
+            lower_trimmed = trimmed.lower()
+            if lower_trimmed.startswith("environment:"):
+                p = trimmed.split(":", 1)[1].strip()
+                prompts.append(p)
+            elif lower_trimmed.startswith("image prompt:"):
                 p = trimmed.split(":", 1)[1].strip()
                 prompts.append(p)
     return prompts
 
 def run_daily_batch():
-    log_batch("Starting daily batch of 3 shorts (Local Only)...")
+    log_batch("Starting daily batch of 1 short (Local Only)...")
     
-    # 1. Fetch 3 topics
-    topics = generate_topics(3)
+    # 1. Fetch 1 topic
+    topics = generate_topics(1)
     history = []
 
     for i, topic in enumerate(topics):
         short_id = i + 1
-        log_batch(f"--- Processing Short {short_id}/3: {topic['title']} ---")
+        log_batch(f"--- Processing Short {short_id}/1: {topic['title']} ---")
         
         script_file = None
         voice_file = None
@@ -56,11 +60,24 @@ def run_daily_batch():
             script_file = generate_script(topic)
             
             # Step B: Voiceover
-            voice_file = generate_voice(script_file)
+            voice_file, vtt_file = generate_voice(script_file)
             
             # Step C: Local Animation Segments (ComfyUI)
             key_prompts = parse_prompts_from_script(script_file)
             log_batch(f"Generating {len(key_prompts)} local animation segments...")
+            if not key_prompts:
+                log_batch("DEBUG: No prompts found, using hardcoded fallback prompts.")
+                key_prompts = [
+                    "Professional woman with grey hair and glasses walking in a blurred park, blinking and looking thoughtful. High detailed 3D Pixar style.",
+                    "The woman stops walking and looks at the camera with a gentle expression, blinking naturally.",
+                    "The woman sits on a park bench, looking up at the sky with a reflective pose.",
+                    "Close up of the woman's face, blinking and then smiling slightly as if realizing something brave.",
+                    "The woman looks around the beautiful park environment, watching birds or leaves, acting alive and reactive.",
+                    "The woman stands up from the bench, brushing off her suit, preparing to move forward.",
+                    "The woman smiles warmly, walking towards the camera with a confident stride.",
+                    "The woman pauses, looks directly at the camera with kindness.",
+                    "The woman walks into the distance, looking back once with a peaceful smile and a wave."
+                ]
             for j, p in enumerate(key_prompts):
                 seg_path = f"outputs/segments/short_{short_id}_seg_{j+1}.mp4"
                 if generate_local_animation(p, seg_path):
@@ -74,7 +91,23 @@ def run_daily_batch():
 
             # Step E: Upload
             log_batch(f"Uploading {topic['title']} to YouTube...")
-            url = upload_video(final_video, f"{topic['title']} #Shorts", topic.get("description", ""), None)
+            
+            # --- Schedule Publish Time (Staggered per short) ---
+            now_local = datetime.now()
+            target_time = now_local.replace(hour=20, minute=0, second=0, microsecond=0)
+            if now_local >= target_time:
+                target_time += timedelta(days=1)
+            
+            # Stagger each short by +1 day, to post at 8 PM daily
+            target_time += timedelta(days=i)
+            
+            local_tz = now_local.astimezone().tzinfo
+            target_aware = target_time.replace(tzinfo=local_tz)
+            utc_target = target_aware.astimezone(timezone.utc)
+            publish_time = utc_target.strftime("%Y-%m-%dT%H:%M:%SZ")
+            log_batch(f"⏰ Scheduling YouTube publish time for: {publish_time}")
+            
+            url = upload_video(final_video, f"{topic['title']} #Shorts", topic.get("description", ""), None, publish_at=publish_time)
             
             # Step F: Status
             if url:
@@ -136,7 +169,7 @@ def run_single_script(script_file, topic_title="Custom Short"):
 
     try:
         # Step B: Voiceover
-        voice_file = generate_voice(script_file_path)
+        voice_file, vtt_file = generate_voice(script_file_path)
         
         # Step C: Local Animation Segments (ComfyUI)
         segments_dir = os.path.abspath("outputs/segments")
