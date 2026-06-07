@@ -80,21 +80,21 @@ def process_prompt_file(filepath):
             # Step E: Upload
             log_watch("Uploading to YouTube...")
             # Determine scheduled publish time (if set via env var SCHEDULE_TIME as HH:MM)
-        publish_at = None
-        schedule_time = os.getenv("SCHEDULE_TIME")
-        if schedule_time:
-            try:
-                hour, minute = map(int, schedule_time.split(":"))
-                now = datetime.now()
-                scheduled_dt = now.replace(hour=hour, minute=minute, second=0, microsecond=0)
-                if scheduled_dt <= now:
-                    # If time already passed today, schedule for tomorrow
-                    scheduled_dt = scheduled_dt.replace(day=now.day + 1)
-                publish_at = scheduled_dt.isoformat() + "Z"
-                log_watch(f"Scheduling YouTube upload for {publish_at}")
-            except Exception as e:
-                log_watch(f"⚠️ Invalid SCHEDULE_TIME format '{schedule_time}': {e}")
-        url = upload_video(final_video, f"{topic['title']} #Shorts", topic.get("description", ""), None, publish_at=publish_at)
+            publish_at = None
+            schedule_time = os.getenv("SCHEDULE_TIME")
+            if schedule_time:
+                try:
+                    hour, minute = map(int, schedule_time.split(":"))
+                    now = datetime.now()
+                    scheduled_dt = now.replace(hour=hour, minute=minute, second=0, microsecond=0)
+                    if scheduled_dt <= now:
+                        # If time already passed today, schedule for tomorrow
+                        scheduled_dt = scheduled_dt.replace(day=now.day + 1)
+                    publish_at = scheduled_dt.isoformat() + "Z"
+                    log_watch(f"Scheduling YouTube upload for {publish_at}")
+                except Exception as e:
+                    log_watch(f"⚠️ Invalid SCHEDULE_TIME format '{schedule_time}': {e}")
+            url = upload_video(final_video, f"{topic['title']} #Shorts", topic.get("description", ""), None, publish_at=publish_at)
             log_watch(f"✅ Upload successful: {url}")
             return True
         else:
