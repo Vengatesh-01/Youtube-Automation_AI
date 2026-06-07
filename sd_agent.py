@@ -47,7 +47,7 @@ def generate_scene_image(prompt: str, output_path: str, seed: int = None) -> boo
         "inputs": prompt + ", vertical, 9:16 aspect ratio, high quality, highly detailed",
     }
 
-    for attempt in range(3):
+    for attempt in range(1):
         try:
             response = requests.post(API_URL, headers=headers, json=payload, timeout=120)
             if response.status_code == 200:
@@ -58,16 +58,15 @@ def generate_scene_image(prompt: str, output_path: str, seed: int = None) -> boo
                 return img_path
             else:
                 safe_print(f"[SD] Attempt {attempt+1} failed: HTTP {response.status_code}")
-                # Print error reason if available (helps with 'Model is loading' errors)
                 try:
                     error_msg = response.json()
                     safe_print(f"     Reason: {error_msg}")
                 except:
                     pass
-                time.sleep(15)
+                # No sleep when retrying – fast fallback
         except Exception as e:
             safe_print(f"[SD] Attempt {attempt+1} error: {e}")
-            time.sleep(15)
+            # No sleep here either
 
     safe_print("[SD] Stable Diffusion failed. Falling back to free placeholder image...")
     return _fallback_image(output_path)
