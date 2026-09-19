@@ -69,11 +69,11 @@ INDEX_HTML = """
 </head>
 <body>
     <div class="card">
-        <h1>🚀 Podcast Automation</h1>
+        <h1>🎬 YouTube Video Generation</h1>
         <p>Status: <span class="status">Online</span></p>
         <p>Schedule: {{ schedule }}</p>
         <div style="display: flex; gap: 10px;">
-            <a href="/run" class="btn">🎙️ Start 5s Podcast Pipeline</a>
+            <a href="/run" class="btn">🚀 Generate YouTube Video</a>
         </div>
     </div>
 
@@ -140,8 +140,8 @@ def trigger_test_pipeline():
     return """
     <html>
         <body style="font-family: sans-serif; text-align: center; padding: 50px;">
-            <h1>🧪 5s Test Started!</h1>
-            <p>The podcast generator is running in the background.</p>
+            <h1>🧪 Test Started!</h1>
+            <p>The video generator is running in the background.</p>
             <p><a href="/">Return to Dashboard</a></p>
             <script>setTimeout(() => { window.location.href = "/"; }, 3000);</script>
         </body>
