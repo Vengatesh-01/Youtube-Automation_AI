@@ -494,7 +494,7 @@ def generate_script(topic: dict) -> str:
             
             safe_print(f"[SCRIPT] Calling Gemini REST API (Angle: {chosen_angle[:40]}..., Session: {session_id}).")
             
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}"
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key={api_key}"
             payload = {
                 "contents": [{"parts": [{"text": full_prompt}]}],
                 "generationConfig": {

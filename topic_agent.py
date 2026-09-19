@@ -86,7 +86,7 @@ def get_gemini_topic():
             "3. The title should be highly engaging and between 5-12 words.\n"
             f"4. UNIQUENESS SEED: {uuid.uuid4().hex}"
         )
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}"
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key={api_key}"
         payload = {
             "contents": [{"parts": [{"text": prompt}]}],
             "generationConfig": {"temperature": 1.2, "responseMimeType": "application/json"}

@@ -25,12 +25,12 @@ def _generate_via_pollinations(prompt: str, output_path: str, seed: int = None) 
     
     seed_val = seed if seed else random.randint(1, 999999)
     
-    # Truncate prompt to avoid URL length issues (max ~500 chars)
-    clean_prompt = prompt[:500].strip()
-    encoded_prompt = urllib.parse.quote(clean_prompt)
+    # Truncate prompt to avoid URL length issues (max ~250 chars before encoding)
+    clean_prompt = prompt[:250].strip()
+    encoded_prompt = urllib.parse.quote(clean_prompt, safe='')
     url = (
         f"https://image.pollinations.ai/prompt/{encoded_prompt}"
-        f"?width=1080&height=1920&seed={seed_val}&nologo=true"
+        f"?width=1080&height=1920&seed={seed_val}&nologo=true&model=flux"
     )
     
     safe_print(f"[SD] Pollinations AI request (seed={seed_val}, prompt_len={len(clean_prompt)})...")
