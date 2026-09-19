@@ -19,44 +19,55 @@ except ImportError:
     pass
 
 
-def _generate_via_craiyon(prompt: str, output_path: str, seed: int = None) -> str:
-    """Primary: Use Craiyon (Completely free, no API key, no credit card)."""
+def _generate_via_hercai_pollinations(prompt: str, output_path: str, seed: int = None) -> str:
+    """Primary: Use Hercai and Pollinations (Domains that actually resolve on the user's network)."""
     img_path = output_path.replace(".mp4", ".png")
     
-    # Craiyon doesn't need an API key
-    url = "https://api.craiyon.com/v3/draw"
+    # Keep prompts very short to avoid 500 errors on these free APIs
+    core_prompt = prompt.split(',')[0:2]
+    clean_prompt = ",".join(core_prompt).strip()
+    encoded_prompt = urllib.parse.quote(clean_prompt)
     
-    # Clean prompt for best results
-    clean_prompt = prompt[:500].strip()
-    
-    payload = {
-        "prompt": clean_prompt,
-        "version": "35s5hfwn9n78gb06"
-    }
-    
-    safe_print(f"[SD] Craiyon API request (prompt: {clean_prompt[:50]})...")
+    # 1. Try Hercai API
+    url_hercai = f"https://hercai.onrender.com/v3/text2image?prompt={encoded_prompt}"
+    safe_print(f"[SD] Hercai API request (prompt: {clean_prompt[:50]})...")
     
     for attempt in range(2):
         try:
-            response = requests.post(url, json=payload, timeout=60)
+            response = requests.get(url_hercai, timeout=60)
             if response.status_code == 200:
                 data = response.json()
-                if "images" in data and len(data["images"]) > 0:
-                    # Craiyon returns a list of relative image paths on their CDN
-                    img_id = data["images"][0]
-                    img_url = f"https://img.craiyon.com/{img_id}"
-                    
+                if "url" in data and data["url"]:
+                    img_url = data["url"]
                     # Download the image
                     img_res = requests.get(img_url, timeout=30)
-                    if img_res.status_code == 200:
+                    if img_res.status_code == 200 and len(img_res.content) > 5000:
                         with open(img_path, "wb") as f:
                             f.write(img_res.content)
-                        safe_print(f"[SD] Craiyon success: {img_path}")
+                        safe_print(f"[SD] Hercai success: {img_path}")
                         return img_path
             else:
-                safe_print(f"[SD] Craiyon attempt {attempt+1} failed: HTTP {response.status_code}")
+                safe_print(f"[SD] Hercai attempt {attempt+1} failed: HTTP {response.status_code}")
         except Exception as e:
-            safe_print(f"[SD] Craiyon attempt {attempt+1} error: {e}")
+            safe_print(f"[SD] Hercai attempt {attempt+1} error: {e}")
+        time.sleep(2)
+        
+    # 2. Try Pollinations (Using the alternate /p/ route with short prompt to avoid Sana limits)
+    url_pollinations = f"https://pollinations.ai/p/{encoded_prompt}?width=1080&height=1920&nologo=true"
+    safe_print(f"[SD] Pollinations API request (prompt: {clean_prompt[:50]})...")
+    
+    for attempt in range(2):
+        try:
+            response = requests.get(url_pollinations, timeout=60)
+            if response.status_code == 200 and len(response.content) > 5000:
+                with open(img_path, "wb") as f:
+                    f.write(response.content)
+                safe_print(f"[SD] Pollinations success: {img_path}")
+                return img_path
+            else:
+                safe_print(f"[SD] Pollinations attempt {attempt+1} failed: HTTP {response.status_code}")
+        except Exception as e:
+            safe_print(f"[SD] Pollinations attempt {attempt+1} error: {e}")
         time.sleep(2)
         
     return None
@@ -139,8 +150,8 @@ def generate_scene_image(prompt: str, output_path: str, seed: int = None) -> str
     safe_print(f"[SD] Generating scene image (seed={seed})...")
     os.makedirs(os.path.dirname(os.path.abspath(output_path)), exist_ok=True)
 
-    # Primary: Craiyon (No API Key Required)
-    result = _generate_via_craiyon(prompt, output_path, seed=seed)
+    # Primary: Hercai & Pollinations APIs
+    result = _generate_via_hercai_pollinations(prompt, output_path, seed=seed)
     if result:
         return result
 
