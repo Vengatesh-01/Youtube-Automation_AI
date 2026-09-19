@@ -20,51 +20,39 @@ except ImportError:
 
 
 def _generate_via_free_api(prompt: str, output_path: str, seed: int = None) -> str:
-    """Primary: Use free image APIs since Pollinations is failing with 402."""
+    """Primary: Use Lexica.art (highly reliable free AI image search)."""
     img_path = output_path.replace(".mp4", ".png")
-    clean_prompt = prompt[:250].strip()
-    encoded_prompt = urllib.parse.quote(clean_prompt, safe='')
     
-    # Provider 1: Airforce API
-    url_airforce = f"https://api.airforce/v1/imagine2?prompt={encoded_prompt}"
-    safe_print(f"[SD] Airforce API request (prompt_len={len(clean_prompt)})...")
+    # Clean the prompt by removing the character seed/long details which Lexica might not match well
+    # Just grab the core visual elements
+    core_prompt = prompt.split(',')[0:3]
+    clean_prompt = ",".join(core_prompt).strip()
+    encoded_prompt = urllib.parse.quote(clean_prompt)
     
-    for attempt in range(2):
-        try:
-            response = requests.get(url_airforce, timeout=60, allow_redirects=True)
-            if response.status_code == 200 and len(response.content) > 5000:
-                with open(img_path, "wb") as f:
-                    f.write(response.content)
-                safe_print(f"[SD] Airforce API success: {img_path}")
-                return img_path
-            else:
-                safe_print(f"[SD] Airforce attempt {attempt+1} failed: HTTP {response.status_code}")
-        except Exception as e:
-            safe_print(f"[SD] Airforce attempt {attempt+1} error: {e}")
-        time.sleep(3)
-        
-    # Provider 2: Hercai API
-    url_hercai = f"https://hercai.onrender.com/v3/text2image?prompt={encoded_prompt}"
-    safe_print(f"[SD] Hercai API request...")
+    url_lexica = f"https://lexica.art/api/v1/search?q={encoded_prompt}"
+    safe_print(f"[SD] Lexica API request (prompt: {clean_prompt})...")
     
     for attempt in range(2):
         try:
-            response = requests.get(url_hercai, timeout=60)
+            response = requests.get(url_lexica, timeout=30)
             if response.status_code == 200:
                 data = response.json()
-                if "url" in data and data["url"]:
-                    img_url = data["url"]
-                    img_res = requests.get(img_url, timeout=60)
+                if "images" in data and len(data["images"]) > 0:
+                    # Pick a random image from the top 5 results for variety
+                    idx = random.randint(0, min(4, len(data["images"]) - 1))
+                    img_url = data["images"][idx]["src"]
+                    
+                    img_res = requests.get(img_url, timeout=30)
                     if img_res.status_code == 200 and len(img_res.content) > 5000:
                         with open(img_path, "wb") as f:
                             f.write(img_res.content)
-                        safe_print(f"[SD] Hercai API success: {img_path}")
+                        safe_print(f"[SD] Lexica API success: {img_path}")
                         return img_path
-            safe_print(f"[SD] Hercai attempt {attempt+1} failed.")
+            safe_print(f"[SD] Lexica attempt {attempt+1} failed or returned no images.")
         except Exception as e:
-            safe_print(f"[SD] Hercai attempt {attempt+1} error: {e}")
-        time.sleep(3)
-    
+            safe_print(f"[SD] Lexica attempt {attempt+1} error: {e}")
+        time.sleep(2)
+        
     return None
 
 
