@@ -19,53 +19,44 @@ except ImportError:
     pass
 
 
-def _generate_via_together(prompt: str, output_path: str, seed: int = None) -> str:
-    """Primary: Use Together AI FLUX model (Requires TOGETHER_API_KEY)."""
-    api_key = os.environ.get("TOGETHER_API_KEY")
-    if not api_key:
-        return None
-        
+def _generate_via_craiyon(prompt: str, output_path: str, seed: int = None) -> str:
+    """Primary: Use Craiyon (Completely free, no API key, no credit card)."""
     img_path = output_path.replace(".mp4", ".png")
-    url = "https://api.together.xyz/v1/images/generations"
-    headers = {
-        "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json"
-    }
+    
+    # Craiyon doesn't need an API key
+    url = "https://api.craiyon.com/v3/draw"
     
     # Clean prompt for best results
     clean_prompt = prompt[:500].strip()
     
     payload = {
-        "model": "black-forest-labs/FLUX.1-schnell-Free",
         "prompt": clean_prompt,
-        "width": 1024,
-        "height": 1024,
-        "steps": 4,
-        "n": 1
+        "version": "35s5hfwn9n78gb06"
     }
-    if seed:
-        payload["seed"] = seed
-        
-    safe_print(f"[SD] Together AI request (prompt: {clean_prompt[:50]})...")
+    
+    safe_print(f"[SD] Craiyon API request (prompt: {clean_prompt[:50]})...")
     
     for attempt in range(2):
         try:
-            response = requests.post(url, json=payload, headers=headers, timeout=60)
+            response = requests.post(url, json=payload, timeout=60)
             if response.status_code == 200:
                 data = response.json()
-                if "data" in data and len(data["data"]) > 0:
-                    img_url = data["data"][0]["url"]
+                if "images" in data and len(data["images"]) > 0:
+                    # Craiyon returns a list of relative image paths on their CDN
+                    img_id = data["images"][0]
+                    img_url = f"https://img.craiyon.com/{img_id}"
+                    
                     # Download the image
                     img_res = requests.get(img_url, timeout=30)
                     if img_res.status_code == 200:
                         with open(img_path, "wb") as f:
                             f.write(img_res.content)
-                        safe_print(f"[SD] Together AI success: {img_path}")
+                        safe_print(f"[SD] Craiyon success: {img_path}")
                         return img_path
             else:
-                safe_print(f"[SD] Together AI attempt {attempt+1} failed: HTTP {response.status_code} - {response.text[:200]}")
+                safe_print(f"[SD] Craiyon attempt {attempt+1} failed: HTTP {response.status_code}")
         except Exception as e:
-            safe_print(f"[SD] Together AI attempt {attempt+1} error: {e}")
+            safe_print(f"[SD] Craiyon attempt {attempt+1} error: {e}")
         time.sleep(2)
         
     return None
@@ -148,8 +139,8 @@ def generate_scene_image(prompt: str, output_path: str, seed: int = None) -> str
     safe_print(f"[SD] Generating scene image (seed={seed})...")
     os.makedirs(os.path.dirname(os.path.abspath(output_path)), exist_ok=True)
 
-    # Primary: Together AI (Requires TOGETHER_API_KEY)
-    result = _generate_via_together(prompt, output_path, seed=seed)
+    # Primary: Craiyon (No API Key Required)
+    result = _generate_via_craiyon(prompt, output_path, seed=seed)
     if result:
         return result
 
