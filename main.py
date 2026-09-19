@@ -103,7 +103,7 @@ def dashboard():
     video_files = [os.path.basename(f) for f in glob.glob("videos/*.mp4")]
     log_content = "No logs yet."
     if os.path.exists("videos/automation.log"):
-        with open("videos/automation.log", "r") as f:
+        with open("videos/automation.log", "r", encoding="utf-8") as f:
             log_content = "".join(f.readlines()[-20:]) # Last 20 lines
             
     return render_template_string(
