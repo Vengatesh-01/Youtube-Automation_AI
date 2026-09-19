@@ -20,37 +20,45 @@ except ImportError:
 
 
 def _generate_via_free_api(prompt: str, output_path: str, seed: int = None) -> str:
-    """Primary: Use Lexica.art (highly reliable free AI image search)."""
+    """Primary: Try alternative free endpoints."""
     img_path = output_path.replace(".mp4", ".png")
+    clean_prompt = prompt[:250].strip()
+    encoded_prompt = urllib.parse.quote(clean_prompt, safe='')
     
-    # Clean the prompt by removing the character seed/long details which Lexica might not match well
-    # Just grab the core visual elements
-    core_prompt = prompt.split(',')[0:3]
-    clean_prompt = ",".join(core_prompt).strip()
-    encoded_prompt = urllib.parse.quote(clean_prompt)
-    
-    url_lexica = f"https://lexica.art/api/v1/search?q={encoded_prompt}"
-    safe_print(f"[SD] Lexica API request (prompt: {clean_prompt})...")
+    # Provider 1: Airforce /imagine (not v1/imagine2 which is 410)
+    url_airforce = f"https://api.airforce/imagine?prompt={encoded_prompt}"
+    safe_print(f"[SD] Airforce API request (prompt: {clean_prompt[:50]})...")
     
     for attempt in range(2):
         try:
-            response = requests.get(url_lexica, timeout=30)
-            if response.status_code == 200:
-                data = response.json()
-                if "images" in data and len(data["images"]) > 0:
-                    # Pick a random image from the top 5 results for variety
-                    idx = random.randint(0, min(4, len(data["images"]) - 1))
-                    img_url = data["images"][idx]["src"]
-                    
-                    img_res = requests.get(img_url, timeout=30)
-                    if img_res.status_code == 200 and len(img_res.content) > 5000:
-                        with open(img_path, "wb") as f:
-                            f.write(img_res.content)
-                        safe_print(f"[SD] Lexica API success: {img_path}")
-                        return img_path
-            safe_print(f"[SD] Lexica attempt {attempt+1} failed or returned no images.")
+            response = requests.get(url_airforce, timeout=30)
+            if response.status_code == 200 and len(response.content) > 5000:
+                with open(img_path, "wb") as f:
+                    f.write(response.content)
+                safe_print(f"[SD] Airforce API success: {img_path}")
+                return img_path
+            else:
+                safe_print(f"[SD] Airforce attempt {attempt+1} failed: HTTP {response.status_code}")
         except Exception as e:
-            safe_print(f"[SD] Lexica attempt {attempt+1} error: {e}")
+            safe_print(f"[SD] Airforce attempt {attempt+1} error: {e}")
+        time.sleep(2)
+
+    # Provider 2: Pollinations AI (Plain URL, no query parameters)
+    url_pollinations = f"https://image.pollinations.ai/prompt/{encoded_prompt}"
+    safe_print(f"[SD] Pollinations Plain API request...")
+    
+    for attempt in range(2):
+        try:
+            response = requests.get(url_pollinations, timeout=60)
+            if response.status_code == 200 and len(response.content) > 5000:
+                with open(img_path, "wb") as f:
+                    f.write(response.content)
+                safe_print(f"[SD] Pollinations success: {img_path}")
+                return img_path
+            else:
+                safe_print(f"[SD] Pollinations attempt {attempt+1} failed: HTTP {response.status_code}")
+        except Exception as e:
+            safe_print(f"[SD] Pollinations attempt {attempt+1} error: {e}")
         time.sleep(2)
         
     return None
