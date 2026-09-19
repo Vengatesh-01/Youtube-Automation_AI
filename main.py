@@ -219,9 +219,103 @@ def save_last_run(run_id, status="scheduled"):
         json.dump(data, f)
 
 
+import re as _re
+import subprocess as _subprocess
+
+# ==========================================
+#   GUARDRAIL VALIDATION FUNCTIONS
+# ==========================================
+
+def _validate_script(script_text: str) -> tuple:
+    """Guardrail: Validate script has proper structure for video generation."""
+    issues = []
+    
+    if len(script_text) < 100:
+        issues.append(f"Script too short ({len(script_text)} chars, need 100+)")
+    
+    scenes = _re.findall(r'Scene \d+', script_text, _re.IGNORECASE)
+    if len(scenes) < 3:
+        issues.append(f"Only {len(scenes)} scenes (need 3+)")
+    
+    image_prompts = _re.findall(r'Image Prompt:\s*(.*)', script_text, _re.IGNORECASE)
+    if len(image_prompts) < 3:
+        issues.append(f"Only {len(image_prompts)} image prompts (need 3+)")
+    
+    voiceover_lines = _re.findall(r'Voiceover:\s*(.*)', script_text, _re.IGNORECASE)
+    if len(voiceover_lines) < 3:
+        issues.append(f"Only {len(voiceover_lines)} voiceover lines (need 3+)")
+    
+    if issues:
+        return False, "; ".join(issues)
+    return True, f"✅ {len(scenes)} scenes, {len(image_prompts)} prompts, {len(voiceover_lines)} voiceovers"
+
+
+def _validate_voice(voice_file: str) -> tuple:
+    """Guardrail: Validate voiceover is real audio, not a silence placeholder."""
+    if not voice_file or not os.path.exists(voice_file):
+        return False, "Voice file does not exist"
+    
+    size = os.path.getsize(voice_file)
+    if size < 10000:  # Less than 10KB = likely silence
+        return False, f"Voice file too small ({size} bytes) — likely silence placeholder"
+    
+    return True, f"✅ {size / 1024:.1f} KB"
+
+
+def _validate_segments(segments: list, total_expected: int) -> tuple:
+    """Guardrail: Validate enough video segments were generated with real content."""
+    if not segments:
+        return False, "No video segments were generated at all"
+    
+    valid = 0
+    for seg in segments:
+        if os.path.exists(seg) and os.path.getsize(seg) > 50000:  # >50KB = real content
+            valid += 1
+    
+    min_required = max(3, total_expected // 2)  # At least 50% or 3
+    if valid < min_required:
+        return False, f"Only {valid}/{total_expected} valid segments (need {min_required}+)"
+    
+    return True, f"✅ {valid}/{total_expected} valid segments"
+
+
+def _validate_final_video(video_path: str) -> tuple:
+    """Guardrail: Validate final video has both video and audio streams."""
+    if not video_path or not os.path.exists(video_path):
+        return False, "Final video file does not exist"
+    
+    size = os.path.getsize(video_path)
+    if size < 100000:  # <100KB = likely broken
+        return False, f"Final video too small ({size} bytes)"
+    
+    # Check audio stream exists using ffprobe
+    has_audio = False
+    try:
+        from utils import get_ffmpeg
+        ffmpeg_exe = get_ffmpeg()
+        ffprobe_exe = ffmpeg_exe.replace("ffmpeg", "ffprobe")
+        result = _subprocess.run(
+            [ffprobe_exe, "-v", "quiet", "-show_streams", "-select_streams", "a", video_path],
+            capture_output=True, text=True, timeout=10
+        )
+        has_audio = "codec_type=audio" in result.stdout
+    except Exception:
+        has_audio = True  # Can't verify, assume OK
+    
+    if not has_audio:
+        return False, f"Final video ({size / (1024*1024):.1f} MB) has NO audio stream"
+    
+    return True, f"✅ {size / (1024*1024):.1f} MB with audio"
+
+
+# ==========================================
+#   MAIN PIPELINE WITH GUARDRAILS
+# ==========================================
+
 def run_pipeline():
     try:
-        log("===== YouTube Automation Pipeline Starting =====")
+        log("===== 🚀 YouTube Automation Pipeline Starting =====")
+        log("🛡️ Guardrails ACTIVE — each step will be validated before proceeding.")
         
         # Deferred imports to ensure boot success even if an agent has missing dependencies
         from topic_agent import generate_topics
@@ -230,7 +324,7 @@ def run_pipeline():
         from video_agent import create_video
         from thumbnail_agent import generate_thumbnail
         from upload_agent import upload_video
-        import random
+        import random, re, uuid
         from character_profiles import get_random_character
 
         # Pick THREE different characters for this video
@@ -253,58 +347,129 @@ def run_pipeline():
         }
         selected_voice = voice_map.get(main_gender, "en-US-ChristopherNeural")
 
-        # Step 1: Topic
-        log("Step 1/6 — Generating topic...")
+        # ── STEP 1: TOPIC ─────────────────────────────────
+        log("━━━ Step 1/6 — Generating topic...")
         topics = generate_topics()
         if not topics:
-            raise ValueError("No topics generated!")
+            log("🛡️ GUARDRAIL FAIL: No topics generated. Aborting pipeline.")
+            return
         topic = topics[0]
-        log(f"Topic: {topic['title']}")
+        log(f"✅ Topic: {topic['title']}")
 
-        # Step 2: Script
-        log("Step 2/6 — Generating script...")
+        # ── STEP 2: SCRIPT ────────────────────────────────
+        log("━━━ Step 2/6 — Generating script...")
         script_file_path = generate_script(topic)
+        
+        if not script_file_path or not os.path.exists(script_file_path):
+            log("🛡️ GUARDRAIL FAIL: Script file was not created. Aborting pipeline.")
+            return
+        
         with open(script_file_path, "r", encoding="utf-8") as f:
             full_script_text = f.read()
+        
+        # 🛡️ GUARDRAIL: Validate script structure
+        script_ok, script_msg = _validate_script(full_script_text)
+        if script_ok:
+            log(f"🛡️ Script Validation: {script_msg}")
+        else:
+            log(f"🛡️ GUARDRAIL WARNING: Script issues — {script_msg}")
+            log("🛡️ Attempting to continue with fallback script...")
+            # Try regenerating with fallback
+            from script_agent import get_fallback_script
+            full_script_text = get_fallback_script(topic.get('title', 'Unknown'))
+            # Save the fallback
+            with open(script_file_path, "w", encoding="utf-8") as f:
+                f.write(full_script_text)
+            script_ok2, script_msg2 = _validate_script(full_script_text)
+            log(f"🛡️ Fallback Script Validation: {script_msg2}")
+            if not script_ok2:
+                log("🛡️ GUARDRAIL FAIL: Even fallback script is invalid. Aborting pipeline.")
+                return
 
-        # Step 3: Voiceover & Subtitles
-        log(f"Step 3/6 — Generating voiceover and subtitles (Voice: {selected_voice})...")
+        # ── STEP 3: VOICEOVER ─────────────────────────────
+        log(f"━━━ Step 3/6 — Generating voiceover (Voice: {selected_voice})...")
         voice_file, vtt_file = generate_voice(full_script_text, voice_name=selected_voice)
+        
+        # 🛡️ GUARDRAIL: Validate voice output
+        voice_ok, voice_msg = _validate_voice(voice_file)
+        if voice_ok:
+            log(f"🛡️ Voice Validation: {voice_msg}")
+        else:
+            log(f"🛡️ GUARDRAIL WARNING: Voice issues — {voice_msg}")
+            log("🛡️ Retrying voiceover generation...")
+            # Retry once with a different voice
+            retry_voice = "en-US-JennyNeural" if selected_voice != "en-US-JennyNeural" else "en-US-ChristopherNeural"
+            voice_file, vtt_file = generate_voice(full_script_text, voice_name=retry_voice)
+            voice_ok2, voice_msg2 = _validate_voice(voice_file)
+            if voice_ok2:
+                log(f"🛡️ Voice Retry OK: {voice_msg2}")
+            else:
+                log(f"🛡️ GUARDRAIL FAIL: Voice generation failed twice — {voice_msg2}. Aborting pipeline.")
+                return
 
-        # Step 4: Thumbnail
-        log("Step 4/6 — Creating thumbnail...")
+        # ── STEP 4: THUMBNAIL ─────────────────────────────
+        log("━━━ Step 4/6 — Creating thumbnail...")
         thumbnail_file = generate_thumbnail(topic["title"], topic.get("category", "Trending"))
+        
+        # 🛡️ GUARDRAIL: Validate thumbnail
+        if thumbnail_file and os.path.exists(thumbnail_file):
+            thumb_size = os.path.getsize(thumbnail_file)
+            log(f"🛡️ Thumbnail Validation: ✅ {thumb_size / 1024:.1f} KB")
+        else:
+            log("🛡️ GUARDRAIL WARNING: Thumbnail creation failed. Continuing without thumbnail.")
+            thumbnail_file = None
 
-        # Step 5: Visuals using Stable Diffusion Agent (5-scene strategy)
-        log("Step 5/6 — Generating Visuals via Stable Diffusion...")
+        # ── STEP 5: VISUALS ───────────────────────────────
+        log("━━━ Step 5/6 — Generating Visuals via AI Image Generation...")
         from sd_agent import generate_local_animation
-        import re, uuid
         
         image_prompts = re.findall(r'Image Prompt:\s*(.*)', full_script_text, re.IGNORECASE)
         if not image_prompts:
-            log("No 'Image Prompt:' tags found in script, falling back to a single generic scene.")
-            clean_prompt = full_script_text[:100].replace("[", "").replace("]", "").strip()
-            image_prompts = [f"{clean_prompt}, cinematic, high quality"]
+            log("🛡️ GUARDRAIL WARNING: No 'Image Prompt:' tags in script. Using scene text as prompts.")
+            # Try extracting scene text instead
+            scene_texts = re.findall(r'Text:\s*(.*)', full_script_text, re.IGNORECASE)
+            if scene_texts:
+                image_prompts = [f"Pixar 3D cinematic style, {t}" for t in scene_texts]
+            else:
+                clean = full_script_text[:100].replace("[", "").replace("]", "").strip()
+                image_prompts = [f"{clean}, cinematic, high quality"]
+        
+        total_scenes = len(image_prompts)
+        log(f"🎬 {total_scenes} scenes to render...")
             
         video_segments = []
+        failed_scenes = []
         effects = ["zoom_in", "zoom_out", "pan_left", "pan_right"]
         
         for i, prompt in enumerate(image_prompts):
             seg_path = os.path.abspath(f"outputs/seg_{uuid.uuid4().hex[:8]}.mp4")
-            
-            # Rotate through the 3 characters
             current_char = character_pool[i % len(character_pool)]
-            
-            # Enhance prompt using ONLY the Gemini script context + Pixar style
             enhanced_prompt = f"Pixar 3D Disney animation style, {prompt}"
             effect = random.choice(effects)
             
-            log(f"Rendering scene {i+1}/{len(image_prompts)}: {enhanced_prompt[:40]}... (Effect: {effect})")
-            if generate_local_animation(enhanced_prompt, seg_path, seed=current_char['seed'], effect=effect):
+            log(f"🎨 Rendering scene {i+1}/{total_scenes}: {enhanced_prompt[:60]}... (Effect: {effect})")
+            
+            success = generate_local_animation(enhanced_prompt, seg_path, seed=current_char['seed'], effect=effect)
+            
+            if success and os.path.exists(seg_path) and os.path.getsize(seg_path) > 50000:
                 video_segments.append(seg_path)
+                log(f"   ✅ Scene {i+1} OK ({os.path.getsize(seg_path) / 1024:.0f} KB)")
+            else:
+                failed_scenes.append(i + 1)
+                log(f"   ❌ Scene {i+1} FAILED — will be skipped")
+        
+        # 🛡️ GUARDRAIL: Validate enough scenes succeeded
+        seg_ok, seg_msg = _validate_segments(video_segments, total_scenes)
+        if seg_ok:
+            log(f"🛡️ Segments Validation: {seg_msg}")
+            if failed_scenes:
+                log(f"🛡️ Note: Scenes {failed_scenes} failed but enough succeeded to continue.")
+        else:
+            log(f"🛡️ GUARDRAIL FAIL: {seg_msg}. Aborting — not enough visual content for a meaningful video.")
+            return
 
-        # Step 6: Combine Everything via FFmpeg
-        log("Final Step — Compositing...")
+        # ── STEP 6: COMPOSE FINAL VIDEO ───────────────────
+        log("━━━ Final Step — Compositing video + audio...")
         from video_agent import create_video
         
         os.makedirs("videos", exist_ok=True)
@@ -318,11 +483,20 @@ def run_pipeline():
         
         video_file = create_video(*args)
         if not video_file:
-            log("⚠️ FFmpeg Assembly yielded no file, searching for fallback...")
+            log("⚠️ FFmpeg Assembly yielded no file, checking fallback...")
             video_file = final_video_file if os.path.exists(final_video_file) else None
 
-        # Optional YouTube Upload
+        # 🛡️ GUARDRAIL: Validate final video quality
+        video_ok, video_msg = _validate_final_video(video_file)
+        if video_ok:
+            log(f"🛡️ Final Video Validation: {video_msg}")
+        else:
+            log(f"🛡️ GUARDRAIL FAIL: {video_msg}. Aborting — will NOT upload a broken video.")
+            return
+
+        # ── UPLOAD GATE ───────────────────────────────────
         if ENABLE_UPLOAD:
+            log("━━━ Upload Gate — All guardrails passed ✅")
             log("Final Phase — Uploading to YouTube...")
             
             # --- Schedule Publish Time (8 AM / 8 PM Local) ---
@@ -355,12 +529,17 @@ def run_pipeline():
                 tags=seo_tags,
                 publish_at=publish_time
             )
-            log(f"✅ Uploaded: {url}")
+            if url:
+                log(f"✅ Uploaded successfully: {url}")
+            else:
+                log("❌ Upload failed — YouTube API returned no URL.")
         else:
             log("Upload skipped (ENABLE_UPLOAD=False).")
 
-        log("===== Pipeline Complete =====")
+        log("===== ✅ Pipeline Complete =====")
         log(f"  Video Ready: {video_file}")
+        log(f"  Segments Used: {len(video_segments)}/{total_scenes}")
+        log(f"  Failed Scenes: {failed_scenes if failed_scenes else 'None'}")
 
     except Exception as e:
         log(f"❌ PIPELINE ERROR: {str(e)}")

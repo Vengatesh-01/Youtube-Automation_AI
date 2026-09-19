@@ -1,5 +1,6 @@
 """
-sd_agent.py — Generates Pixar-style scene images using Pollinations AI (free, no API key).
+sd_agent.py — Generates Pixar-style scene images using Pollinations AI (free, no API key)
+with HuggingFace Stable Diffusion as fallback.
 Each scene uses a character seed for visual consistency within a video.
 """
 import os
@@ -7,46 +8,60 @@ import time
 import requests
 import subprocess
 import urllib.parse
+import random
 from utils import safe_print, get_ffmpeg
+
 # Load environment variables from a .env file if present (e.g., HF_TOKEN)
 try:
     from dotenv import load_dotenv
     load_dotenv()
 except ImportError:
-    # dotenv is optional; if not installed we simply skip loading .env
     pass
 
 
-def _fallback_image(output_path: str):
-    fallback_url = "https://loremflickr.com/1080/1920/animation,3d"
-    try:
-        response = requests.get(fallback_url, timeout=30)
-        if response.status_code == 200:
-            img_path = output_path.replace(".mp4", ".png")
-            with open(img_path, "wb") as f:
-                f.write(response.content)
-            safe_print(f"[SD] Fallback image downloaded: {img_path}")
-            return img_path
-    except Exception as e:
-        safe_print(f"[SD] Fallback also failed: {e}")
-    safe_print("[SD] All attempts failed. Using fallback black frame.")
+def _generate_via_pollinations(prompt: str, output_path: str, seed: int = None) -> str:
+    """Primary: Use Pollinations AI (free, no API key, reliable)."""
+    img_path = output_path.replace(".mp4", ".png")
+    
+    seed_val = seed if seed else random.randint(1, 999999)
+    encoded_prompt = urllib.parse.quote(prompt)
+    url = (
+        f"https://image.pollinations.ai/prompt/{encoded_prompt}"
+        f"?width=1080&height=1920&seed={seed_val}&nologo=true&model=flux"
+    )
+    
+    safe_print(f"[SD] Pollinations AI request (seed={seed_val})...")
+    
+    for attempt in range(3):
+        try:
+            response = requests.get(url, timeout=120)
+            if response.status_code == 200 and len(response.content) > 1000:
+                with open(img_path, "wb") as f:
+                    f.write(response.content)
+                safe_print(f"[SD] Pollinations AI success: {img_path} ({len(response.content)} bytes)")
+                return img_path
+            else:
+                safe_print(f"[SD] Pollinations attempt {attempt+1} failed: HTTP {response.status_code}, size={len(response.content)}")
+        except requests.exceptions.Timeout:
+            safe_print(f"[SD] Pollinations attempt {attempt+1} timed out.")
+        except Exception as e:
+            safe_print(f"[SD] Pollinations attempt {attempt+1} error: {e}")
+        
+        if attempt < 2:
+            time.sleep(3)
+    
     return None
 
-def generate_scene_image(prompt: str, output_path: str, seed: int = None) -> bool:
-    """
-    Generate an image using Stable Diffusion (via Hugging Face Inference API).
-    Falls back to a stock photo if the API fails or token is missing.
-    """
-    safe_print(f"[SD] Generating scene image (seed={seed}) via Stable Diffusion...")
-    os.makedirs(os.path.dirname(os.path.abspath(output_path)), exist_ok=True)
 
+def _generate_via_huggingface(prompt: str, output_path: str, seed: int = None) -> str:
+    """Fallback: Use HuggingFace Stable Diffusion XL API."""
     hf_token = os.environ.get("HF_TOKEN", "")
     if not hf_token:
-        safe_print("⚠️ [SD] HF_TOKEN not found in environment (.env).")
-        safe_print("[SD] Stable Diffusion requires a free Hugging Face token. Falling back to placeholder...")
-        return _fallback_image(output_path)
+        safe_print("[SD] HF_TOKEN not found. Skipping HuggingFace fallback.")
+        return None
 
-    # Prefer a local Stable Diffusion server if configured via LOCAL_SD_URL.
+    img_path = output_path.replace(".mp4", ".png")
+    
     local_sd_url = os.getenv("LOCAL_SD_URL")
     if local_sd_url:
         API_URL = local_sd_url
@@ -56,33 +71,76 @@ def generate_scene_image(prompt: str, output_path: str, seed: int = None) -> boo
 
     headers = {"Authorization": f"Bearer {hf_token}"}
     
-    # SDXL works best when prompted for aspect ratio textually in the free API
     payload = {
         "inputs": prompt + ", vertical, 9:16 aspect ratio, high quality, highly detailed",
+        "parameters": {}
     }
+    if seed:
+        payload["parameters"]["seed"] = seed
 
-    for attempt in range(1):
+    for attempt in range(2):
         try:
+            safe_print(f"[SD] HuggingFace attempt {attempt+1}...")
             response = requests.post(API_URL, headers=headers, json=payload, timeout=120)
-            if response.status_code == 200:
-                img_path = output_path.replace(".mp4", ".png")
+            if response.status_code == 200 and len(response.content) > 5000:
                 with open(img_path, "wb") as f:
                     f.write(response.content)
-                safe_print(f"[SD] Image downloaded successfully: {img_path}")
+                safe_print(f"[SD] HuggingFace success: {img_path}")
                 return img_path
             else:
-                safe_print(f"[SD] Attempt {attempt+1} failed: HTTP {response.status_code}")
+                safe_print(f"[SD] HuggingFace attempt {attempt+1} failed: HTTP {response.status_code}")
                 try:
                     error_msg = response.json()
                     safe_print(f"     Reason: {error_msg}")
                 except:
                     pass
-                # No sleep when retrying – fast fallback
         except Exception as e:
-            safe_print(f"[SD] Attempt {attempt+1} error: {e}")
-            # No sleep here either
+            safe_print(f"[SD] HuggingFace attempt {attempt+1} error: {e}")
+        
+        if attempt < 1:
+            time.sleep(5)
 
-    safe_print("[SD] Stable Diffusion failed. Falling back to free placeholder image...")
+    return None
+
+
+def _fallback_image(output_path: str):
+    """Last resort: download a stock image."""
+    fallback_url = "https://loremflickr.com/1080/1920/animation,3d"
+    try:
+        response = requests.get(fallback_url, timeout=30)
+        if response.status_code == 200:
+            img_path = output_path.replace(".mp4", ".png")
+            with open(img_path, "wb") as f:
+                f.write(response.content)
+            safe_print(f"[SD] Fallback stock image downloaded: {img_path}")
+            return img_path
+    except Exception as e:
+        safe_print(f"[SD] Fallback also failed: {e}")
+    safe_print("[SD] All image generation attempts failed. Will use black frame.")
+    return None
+
+
+def generate_scene_image(prompt: str, output_path: str, seed: int = None) -> str:
+    """
+    Generate an image for a scene. Tries in order:
+    1. Pollinations AI (free, reliable, no key needed)
+    2. HuggingFace Stable Diffusion XL (requires HF_TOKEN)
+    3. Stock photo fallback
+    """
+    safe_print(f"[SD] Generating scene image (seed={seed})...")
+    os.makedirs(os.path.dirname(os.path.abspath(output_path)), exist_ok=True)
+
+    # Primary: Pollinations AI
+    result = _generate_via_pollinations(prompt, output_path, seed=seed)
+    if result:
+        return result
+
+    # Fallback 1: HuggingFace
+    result = _generate_via_huggingface(prompt, output_path, seed=seed)
+    if result:
+        return result
+
+    # Fallback 2: Stock photo
     return _fallback_image(output_path)
 
 
@@ -140,7 +198,7 @@ def image_to_video(image_path: str, output_path: str, duration: int = 6, effect:
         ]
 
     try:
-        res = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=120)
+        res = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, timeout=120)
         if res.returncode == 0 and os.path.exists(output_path):
             safe_print(f"[SD] Video segment ready ({effect}): {output_path}")
             # Cleanup source image
@@ -151,7 +209,8 @@ def image_to_video(image_path: str, output_path: str, duration: int = 6, effect:
                     pass
             return True
         else:
-            safe_print(f"[SD] FFmpeg error: {res.stderr[-300:]}")
+            stderr_text = res.stderr.decode('utf-8', errors='replace')[-300:] if res.stderr else "No stderr"
+            safe_print(f"[SD] FFmpeg error: {stderr_text}")
             return False
     except Exception as e:
         safe_print(f"[SD] FFmpeg exception: {e}")

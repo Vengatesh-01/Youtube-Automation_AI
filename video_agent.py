@@ -11,7 +11,6 @@ from utils import safe_print as log_agent, get_ffmpeg
 
 
 
-
 def create_video(*args, **kwargs):
     """
     Assemble a final MP4 from scene video segments + optional voiceover.
@@ -49,13 +48,18 @@ def create_video(*args, **kwargs):
 
     if voice_file and os.path.exists(voice_file):
         cmd.extend(["-i", voice_file])
+        # Explicitly map video from concat (input 0) and audio from voiceover (input 1)
+        cmd.extend(["-map", "0:v:0", "-map", "1:a:0"])
+        log_agent(f"🔊 Voiceover will be mixed in: {voice_file}")
+    else:
+        log_agent("⚠️ No voiceover file found. Video will have no audio.")
 
     cmd.extend(["-c:v", "libx264", "-preset", "ultrafast", "-threads", "1", "-c:a", "aac", "-b:a", "192k", "-shortest"])
     cmd.append(output_video)
 
     log_agent(f"Running: ffmpeg concat -> {output_video}")
     try:
-        res = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=300)
+        res = subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, timeout=300)
     except subprocess.TimeoutExpired:
         log_agent("❌ FFmpeg timed out after 300 seconds!")
         return None
@@ -70,7 +74,8 @@ def create_video(*args, **kwargs):
         log_agent(f"✅ Video assembled: {output_video}")
         return output_video
     else:
-        log_agent(f"❌ FFmpeg failed: {res.stderr[-500:]}")
+        stderr_text = res.stderr.decode('utf-8', errors='replace')[-500:] if res.stderr else "No stderr"
+        log_agent(f"❌ FFmpeg failed: {stderr_text}")
         return None
 
 
