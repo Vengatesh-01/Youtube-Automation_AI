@@ -19,41 +19,51 @@ except ImportError:
     pass
 
 
-def _generate_via_pollinations(prompt: str, output_path: str, seed: int = None) -> str:
-    """Primary: Use Pollinations AI (free, no API key, reliable)."""
+def _generate_via_free_api(prompt: str, output_path: str, seed: int = None) -> str:
+    """Primary: Use free image APIs since Pollinations is failing with 402."""
     img_path = output_path.replace(".mp4", ".png")
-    
-    seed_val = seed if seed else random.randint(1, 999999)
-    
-    # Truncate prompt to avoid URL length issues (max ~250 chars before encoding)
     clean_prompt = prompt[:250].strip()
     encoded_prompt = urllib.parse.quote(clean_prompt, safe='')
-    url = (
-        f"https://image.pollinations.ai/prompt/{encoded_prompt}"
-        f"?model=flux&width=1080&height=1920&seed={seed_val}&nologo=true"
-    )
     
-    safe_print(f"[SD] Pollinations AI request (seed={seed_val}, prompt_len={len(clean_prompt)})...")
+    # Provider 1: Airforce API
+    url_airforce = f"https://api.airforce/v1/imagine2?prompt={encoded_prompt}"
+    safe_print(f"[SD] Airforce API request (prompt_len={len(clean_prompt)})...")
     
-    for attempt in range(3):
+    for attempt in range(2):
         try:
-            response = requests.get(url, timeout=120, allow_redirects=True)
+            response = requests.get(url_airforce, timeout=60, allow_redirects=True)
             if response.status_code == 200 and len(response.content) > 5000:
                 with open(img_path, "wb") as f:
                     f.write(response.content)
-                safe_print(f"[SD] Pollinations AI success: {img_path} ({len(response.content)} bytes)")
+                safe_print(f"[SD] Airforce API success: {img_path}")
                 return img_path
             else:
-                # Log the error body for debugging
-                error_body = response.text[:200] if response.text else "empty"
-                safe_print(f"[SD] Pollinations attempt {attempt+1} failed: HTTP {response.status_code}, size={len(response.content)}, body={error_body}")
-        except requests.exceptions.Timeout:
-            safe_print(f"[SD] Pollinations attempt {attempt+1} timed out.")
+                safe_print(f"[SD] Airforce attempt {attempt+1} failed: HTTP {response.status_code}")
         except Exception as e:
-            safe_print(f"[SD] Pollinations attempt {attempt+1} error: {e}")
+            safe_print(f"[SD] Airforce attempt {attempt+1} error: {e}")
+        time.sleep(3)
         
-        if attempt < 2:
-            time.sleep(5)  # Wait 5s between retries
+    # Provider 2: Hercai API
+    url_hercai = f"https://hercai.onrender.com/v3/text2image?prompt={encoded_prompt}"
+    safe_print(f"[SD] Hercai API request...")
+    
+    for attempt in range(2):
+        try:
+            response = requests.get(url_hercai, timeout=60)
+            if response.status_code == 200:
+                data = response.json()
+                if "url" in data and data["url"]:
+                    img_url = data["url"]
+                    img_res = requests.get(img_url, timeout=60)
+                    if img_res.status_code == 200 and len(img_res.content) > 5000:
+                        with open(img_path, "wb") as f:
+                            f.write(img_res.content)
+                        safe_print(f"[SD] Hercai API success: {img_path}")
+                        return img_path
+            safe_print(f"[SD] Hercai attempt {attempt+1} failed.")
+        except Exception as e:
+            safe_print(f"[SD] Hercai attempt {attempt+1} error: {e}")
+        time.sleep(3)
     
     return None
 
@@ -135,8 +145,8 @@ def generate_scene_image(prompt: str, output_path: str, seed: int = None) -> str
     safe_print(f"[SD] Generating scene image (seed={seed})...")
     os.makedirs(os.path.dirname(os.path.abspath(output_path)), exist_ok=True)
 
-    # Primary: Pollinations AI
-    result = _generate_via_pollinations(prompt, output_path, seed=seed)
+    # Primary: Free Alternative APIs (Airforce / Hercai)
+    result = _generate_via_free_api(prompt, output_path, seed=seed)
     if result:
         return result
 
