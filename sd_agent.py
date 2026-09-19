@@ -30,7 +30,7 @@ def _generate_via_pollinations(prompt: str, output_path: str, seed: int = None) 
     encoded_prompt = urllib.parse.quote(clean_prompt, safe='')
     url = (
         f"https://image.pollinations.ai/prompt/{encoded_prompt}"
-        f"?width=1080&height=1920&seed={seed_val}&nologo=true&model=flux"
+        f"?model=flux&width=1080&height=1920&seed={seed_val}&nologo=true"
     )
     
     safe_print(f"[SD] Pollinations AI request (seed={seed_val}, prompt_len={len(clean_prompt)})...")
