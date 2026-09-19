@@ -19,46 +19,53 @@ except ImportError:
     pass
 
 
-def _generate_via_free_api(prompt: str, output_path: str, seed: int = None) -> str:
-    """Primary: Try alternative free endpoints."""
+def _generate_via_together(prompt: str, output_path: str, seed: int = None) -> str:
+    """Primary: Use Together AI FLUX model (Requires TOGETHER_API_KEY)."""
+    api_key = os.environ.get("TOGETHER_API_KEY")
+    if not api_key:
+        return None
+        
     img_path = output_path.replace(".mp4", ".png")
-    clean_prompt = prompt[:250].strip()
-    encoded_prompt = urllib.parse.quote(clean_prompt, safe='')
+    url = "https://api.together.xyz/v1/images/generations"
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json"
+    }
     
-    # Provider 1: Airforce /imagine (not v1/imagine2 which is 410)
-    url_airforce = f"https://api.airforce/imagine?prompt={encoded_prompt}"
-    safe_print(f"[SD] Airforce API request (prompt: {clean_prompt[:50]})...")
+    # Clean prompt for best results
+    clean_prompt = prompt[:500].strip()
     
-    for attempt in range(2):
-        try:
-            response = requests.get(url_airforce, timeout=30)
-            if response.status_code == 200 and len(response.content) > 5000:
-                with open(img_path, "wb") as f:
-                    f.write(response.content)
-                safe_print(f"[SD] Airforce API success: {img_path}")
-                return img_path
-            else:
-                safe_print(f"[SD] Airforce attempt {attempt+1} failed: HTTP {response.status_code}")
-        except Exception as e:
-            safe_print(f"[SD] Airforce attempt {attempt+1} error: {e}")
-        time.sleep(2)
-
-    # Provider 2: Pollinations AI (Plain URL, no query parameters)
-    url_pollinations = f"https://image.pollinations.ai/prompt/{encoded_prompt}"
-    safe_print(f"[SD] Pollinations Plain API request...")
+    payload = {
+        "model": "black-forest-labs/FLUX.1-schnell-Free",
+        "prompt": clean_prompt,
+        "width": 1024,
+        "height": 1024,
+        "steps": 4,
+        "n": 1
+    }
+    if seed:
+        payload["seed"] = seed
+        
+    safe_print(f"[SD] Together AI request (prompt: {clean_prompt[:50]})...")
     
     for attempt in range(2):
         try:
-            response = requests.get(url_pollinations, timeout=60)
-            if response.status_code == 200 and len(response.content) > 5000:
-                with open(img_path, "wb") as f:
-                    f.write(response.content)
-                safe_print(f"[SD] Pollinations success: {img_path}")
-                return img_path
+            response = requests.post(url, json=payload, headers=headers, timeout=60)
+            if response.status_code == 200:
+                data = response.json()
+                if "data" in data and len(data["data"]) > 0:
+                    img_url = data["data"][0]["url"]
+                    # Download the image
+                    img_res = requests.get(img_url, timeout=30)
+                    if img_res.status_code == 200:
+                        with open(img_path, "wb") as f:
+                            f.write(img_res.content)
+                        safe_print(f"[SD] Together AI success: {img_path}")
+                        return img_path
             else:
-                safe_print(f"[SD] Pollinations attempt {attempt+1} failed: HTTP {response.status_code}")
+                safe_print(f"[SD] Together AI attempt {attempt+1} failed: HTTP {response.status_code} - {response.text[:200]}")
         except Exception as e:
-            safe_print(f"[SD] Pollinations attempt {attempt+1} error: {e}")
+            safe_print(f"[SD] Together AI attempt {attempt+1} error: {e}")
         time.sleep(2)
         
     return None
@@ -141,8 +148,8 @@ def generate_scene_image(prompt: str, output_path: str, seed: int = None) -> str
     safe_print(f"[SD] Generating scene image (seed={seed})...")
     os.makedirs(os.path.dirname(os.path.abspath(output_path)), exist_ok=True)
 
-    # Primary: Free Alternative APIs (Airforce / Hercai)
-    result = _generate_via_free_api(prompt, output_path, seed=seed)
+    # Primary: Together AI (Requires TOGETHER_API_KEY)
+    result = _generate_via_together(prompt, output_path, seed=seed)
     if result:
         return result
 
