@@ -2,6 +2,8 @@ import os
 import json
 import time
 from datetime import datetime, timezone, timedelta
+import re
+from character_profiles import get_random_character
 from topic_agent import generate_topics
 from script_agent import generate_script
 from voice_agent import generate_voice
@@ -22,21 +24,13 @@ def log_batch(msg):
 def parse_prompts_from_script(script_file):
     """
     Extracts key frame descriptions from the script file.
-    Expects 'Environment' lines for background prompts.
     """
-    prompts = []
     if not os.path.exists(script_file): return []
     with open(script_file, "r", encoding="utf-8") as f:
-        lines = f.readlines()
-        for line in lines:
-            trimmed = line.strip()
-            lower_trimmed = trimmed.lower()
-            if lower_trimmed.startswith("environment:"):
-                p = trimmed.split(":", 1)[1].strip()
-                prompts.append(p)
-            elif lower_trimmed.startswith("image prompt:"):
-                p = trimmed.split(":", 1)[1].strip()
-                prompts.append(p)
+        content = f.read()
+    
+    # Use same regex as main.py to handle variations
+    prompts = re.findall(r'Image\s*Prompt\s*:\s*(.*)', content, re.IGNORECASE)
     return prompts
 
 def run_daily_batch():
@@ -78,9 +72,12 @@ def run_daily_batch():
                     "The woman pauses, looks directly at the camera with kindness.",
                     "The woman walks into the distance, looking back once with a peaceful smile and a wave."
                 ]
+            character_pool = [get_random_character() for _ in range(3)]
             for j, p in enumerate(key_prompts):
                 seg_path = f"outputs/segments/short_{short_id}_seg_{j+1}.mp4"
-                if generate_local_animation(p, seg_path):
+                current_char = character_pool[j % len(character_pool)]
+                enhanced_p = f"Pixar 3D Disney animation style, {current_char['visual']}, {p}"
+                if generate_local_animation(enhanced_p, seg_path):
                     video_segments.append(seg_path)
             
             # Step D: Assemble in Blender

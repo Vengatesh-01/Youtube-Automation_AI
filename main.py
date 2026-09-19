@@ -26,6 +26,11 @@ import time
 import threading
 import os
 from datetime import datetime, timezone, timedelta
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
 from flask import Flask, send_from_directory, render_template_string
 import glob
 import traceback
@@ -233,15 +238,16 @@ def _validate_script(script_text: str) -> tuple:
     if len(script_text) < 100:
         issues.append(f"Script too short ({len(script_text)} chars, need 100+)")
     
-    scenes = _re.findall(r'Scene \d+', script_text, _re.IGNORECASE)
+    # Relaxed regexes to account for markdown variations even if normalized
+    scenes = _re.findall(r'Scene\s*\d+', script_text, _re.IGNORECASE)
     if len(scenes) < 3:
         issues.append(f"Only {len(scenes)} scenes (need 3+)")
     
-    image_prompts = _re.findall(r'Image Prompt:\s*(.*)', script_text, _re.IGNORECASE)
+    image_prompts = _re.findall(r'Image\s*Prompt\s*:\s*(.*)', script_text, _re.IGNORECASE)
     if len(image_prompts) < 3:
         issues.append(f"Only {len(image_prompts)} image prompts (need 3+)")
     
-    voiceover_lines = _re.findall(r'Voiceover:\s*(.*)', script_text, _re.IGNORECASE)
+    voiceover_lines = _re.findall(r'Voiceover\s*:\s*(.*)', script_text, _re.IGNORECASE)
     if len(voiceover_lines) < 3:
         issues.append(f"Only {len(voiceover_lines)} voiceover lines (need 3+)")
     
@@ -423,7 +429,7 @@ def run_pipeline():
         log("━━━ Step 5/6 — Generating Visuals via AI Image Generation...")
         from sd_agent import generate_local_animation
         
-        image_prompts = re.findall(r'Image Prompt:\s*(.*)', full_script_text, re.IGNORECASE)
+        image_prompts = re.findall(r'Image\s*Prompt\s*:\s*(.*)', full_script_text, re.IGNORECASE)
         if not image_prompts:
             log("🛡️ GUARDRAIL WARNING: No 'Image Prompt:' tags in script. Using scene text as prompts.")
             # Try extracting scene text instead
@@ -444,7 +450,8 @@ def run_pipeline():
         for i, prompt in enumerate(image_prompts):
             seg_path = os.path.abspath(f"outputs/seg_{uuid.uuid4().hex[:8]}.mp4")
             current_char = character_pool[i % len(character_pool)]
-            enhanced_prompt = f"Pixar 3D Disney animation style, {prompt}"
+            # Inject the persistent character visual into the prompt
+            enhanced_prompt = f"Pixar 3D Disney animation style, {current_char['visual']}, {prompt}"
             effect = random.choice(effects)
             
             log(f"🎨 Rendering scene {i+1}/{total_scenes}: {enhanced_prompt[:60]}... (Effect: {effect})")
