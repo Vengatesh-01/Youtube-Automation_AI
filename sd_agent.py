@@ -24,31 +24,36 @@ def _generate_via_pollinations(prompt: str, output_path: str, seed: int = None) 
     img_path = output_path.replace(".mp4", ".png")
     
     seed_val = seed if seed else random.randint(1, 999999)
-    encoded_prompt = urllib.parse.quote(prompt)
+    
+    # Truncate prompt to avoid URL length issues (max ~500 chars)
+    clean_prompt = prompt[:500].strip()
+    encoded_prompt = urllib.parse.quote(clean_prompt)
     url = (
         f"https://image.pollinations.ai/prompt/{encoded_prompt}"
-        f"?width=1080&height=1920&seed={seed_val}&nologo=true&model=flux"
+        f"?width=1080&height=1920&seed={seed_val}&nologo=true"
     )
     
-    safe_print(f"[SD] Pollinations AI request (seed={seed_val})...")
+    safe_print(f"[SD] Pollinations AI request (seed={seed_val}, prompt_len={len(clean_prompt)})...")
     
     for attempt in range(3):
         try:
-            response = requests.get(url, timeout=120)
-            if response.status_code == 200 and len(response.content) > 1000:
+            response = requests.get(url, timeout=120, allow_redirects=True)
+            if response.status_code == 200 and len(response.content) > 5000:
                 with open(img_path, "wb") as f:
                     f.write(response.content)
                 safe_print(f"[SD] Pollinations AI success: {img_path} ({len(response.content)} bytes)")
                 return img_path
             else:
-                safe_print(f"[SD] Pollinations attempt {attempt+1} failed: HTTP {response.status_code}, size={len(response.content)}")
+                # Log the error body for debugging
+                error_body = response.text[:200] if response.text else "empty"
+                safe_print(f"[SD] Pollinations attempt {attempt+1} failed: HTTP {response.status_code}, size={len(response.content)}, body={error_body}")
         except requests.exceptions.Timeout:
             safe_print(f"[SD] Pollinations attempt {attempt+1} timed out.")
         except Exception as e:
             safe_print(f"[SD] Pollinations attempt {attempt+1} error: {e}")
         
         if attempt < 2:
-            time.sleep(3)
+            time.sleep(5)  # Wait 5s between retries
     
     return None
 
