@@ -146,6 +146,27 @@ def run_pipeline(topic, script_text, bg_path, thumb_path):
         log_msg("--- STARTING PIPELINE ---")
         log_msg(f"Topic: {topic}")
         
+        intro_text = """
+BOY:
+Welcome to the English Practice Podcast.
+
+GIRL:
+Listen. Speak. Improve.
+
+BOY:
+Real conversations, useful English, and practice you can use in real life.
+
+GIRL:
+So don't just listen.
+
+BOY:
+Speak with us.
+
+GIRL:
+Let's begin.
+"""
+        script_text = intro_text + "\n" + script_text
+        
         # 1. Parse Script
         log_msg("Parsing script...")
         dialogues = parse_script(script_text)
