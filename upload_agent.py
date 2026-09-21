@@ -150,7 +150,10 @@ def upload_video(
             "tags": tags,
             "categoryId": category_id,
         },
-        "status": {"privacyStatus": privacy},
+        "status": {
+            "privacyStatus": privacy,
+            "selfDeclaredMadeForKids": False
+        },
     }
 
     if publish_at:
