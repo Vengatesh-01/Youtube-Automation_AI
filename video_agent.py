@@ -39,7 +39,7 @@ def assemble_podcast_video(background_image, final_audio, subtitle_file, output_
             "[0:v]scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080[bg]; "
             "[1:a]showwaves=s=600x150:mode=cline:colors=cyan[wave]; "
             "[bg][wave]overlay=(W-w)/2:H-h-150[v_over]; "
-            f"[v_over]subtitles='{sub_rel}':force_style='Fontname=Arial Bold,Fontsize=48,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BorderStyle=1,Outline=3,Shadow=0,Alignment=2,MarginV=50'[outv]"
+            f"[v_over]subtitles='{sub_rel}':force_style='Fontname=Arial Bold,Fontsize=64,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BorderStyle=1,Outline=3,Shadow=0,Alignment=2,MarginV=50'[outv]"
         )
 
     cmd = [

@@ -89,22 +89,9 @@ def run_daily_batch():
             # Step E: Upload
             log_batch(f"Uploading {topic['title']} to YouTube...")
             
-            # --- Schedule Publish Time (Staggered per short) ---
-            now_local = datetime.now()
-            target_time = now_local.replace(hour=20, minute=0, second=0, microsecond=0)
-            if now_local >= target_time:
-                target_time += timedelta(days=1)
-            
-            # Stagger each short by +1 day, to post at 8 PM daily
-            target_time += timedelta(days=i)
-            
-            local_tz = now_local.astimezone().tzinfo
-            target_aware = target_time.replace(tzinfo=local_tz)
-            utc_target = target_aware.astimezone(timezone.utc)
-            publish_time = utc_target.strftime("%Y-%m-%dT%H:%M:%SZ")
-            log_batch(f"⏰ Scheduling YouTube publish time for: {publish_time}")
-            
-            url = upload_video(final_video, f"{topic['title']} #Shorts", topic.get("description", ""), None, publish_at=publish_time)
+            # --- Publish Immediately (Public) ---
+            log_batch("Uploading video as public immediately.")
+            url = upload_video(final_video, f"{topic['title']} #Shorts", topic.get("description", ""), None, privacy="public")
             
             # Step F: Status
             if url:

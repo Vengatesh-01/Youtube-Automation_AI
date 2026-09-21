@@ -208,7 +208,7 @@ Let's begin.
                 d["text"] = ""
                 continue
                 
-            voice = "en-GB-ThomasNeural" if speaker == "boy" else "en-US-JennyNeural"
+            voice = "en-US-GuyNeural" if speaker == "boy" else "en-US-JennyNeural"
             
             output_mp3 = f"outputs/audio/{speaker}_{i:03d}.mp3"
             success = generate_voice(text, output_mp3, voice)
