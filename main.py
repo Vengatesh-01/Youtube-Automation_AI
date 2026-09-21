@@ -175,7 +175,8 @@ Speak with us.
 GIRL:
 Let's begin.
 """
-        script_text = intro_text + "\n" + script_text
+        if video_type == "long":
+            script_text = intro_text + "\n" + script_text
         
         # 1. Parse Script
         log_msg("Parsing script...")
