@@ -241,7 +241,7 @@ Let's begin.
             description=metadata.get("description", topic),
             thumbnail_file=thumb_path,
             tags=metadata.get("tags", []),
-            privacy="private" # default to private for safety
+            privacy="public" # Set to public so video is visible to everyone
         )
         
         if url:
