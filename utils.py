@@ -1,5 +1,6 @@
 import os
 import shutil
+import subprocess
 
 def safe_print(msg):
     try:
@@ -22,11 +23,16 @@ def get_ffmpeg():
         
     return "ffmpeg"  # Final fallback
 
-import subprocess
 def get_audio_duration(file_path):
-    ffprobe_exe = get_ffmpeg().replace("ffmpeg", "ffprobe")
-    if not ffprobe_exe.endswith("ffprobe.exe") and ffprobe_exe.endswith("ffmpeg.exe"):
-        ffprobe_exe = ffprobe_exe.replace("ffmpeg.exe", "ffprobe.exe")
+    ffmpeg_exe = get_ffmpeg()
+    
+    if os.path.isabs(ffmpeg_exe):
+        ffprobe_exe = os.path.join(os.path.dirname(ffmpeg_exe), "ffprobe.exe")
+        if not os.path.exists(ffprobe_exe):
+            ffprobe_exe = "ffprobe"
+    else:
+        ffprobe_exe = "ffprobe"
+        
     cmd = [ffprobe_exe, "-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", file_path]
     try:
         res = subprocess.run(cmd, capture_output=True, text=True, timeout=5)
@@ -35,4 +41,3 @@ def get_audio_duration(file_path):
     except Exception as e:
         safe_print(f"Error getting audio duration: {e}")
     return 0.0
-

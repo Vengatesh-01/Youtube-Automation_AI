@@ -111,6 +111,11 @@ def parse_script(script_text):
                 dialogues.append({"speaker": current_speaker, "text": " ".join(current_text)})
             current_speaker = "girl"
             current_text = []
+        elif upper_line in ('PAUSE:', '[PAUSE]', 'PAUSE'):
+            if current_speaker and current_text:
+                dialogues.append({"speaker": current_speaker, "text": " ".join(current_text)})
+            current_speaker = "pause"
+            current_text = []
         else:
             if current_speaker:
                 current_text.append(line)
@@ -128,6 +133,13 @@ def assemble_audio(audio_files, output_file):
     cmd = [get_ffmpeg(), "-y", "-f", "concat", "-safe", "0", "-i", list_file, "-c", "copy", output_file]
     subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
     return output_file
+
+def generate_silence(duration, output_file):
+    cmd = [
+        get_ffmpeg(), "-y", "-f", "lavfi", "-i", "anullsrc=r=44100:cl=mono",
+        "-t", str(duration), "-q:a", "9", "-acodec", "libmp3lame", output_file
+    ]
+    subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
 
 def run_pipeline(topic, script_text, bg_path, thumb_path):
     try:
@@ -147,10 +159,24 @@ def run_pipeline(topic, script_text, bg_path, thumb_path):
         audio_files = []
         durations = []
         
-        log_msg("Generating TTS voices...")
+        log_msg("Generating TTS voices and pauses...")
         for i, d in enumerate(dialogues):
             speaker = d["speaker"]
             text = d["text"]
+            
+            if speaker == "pause":
+                try:
+                    duration_sec = float(text.strip())
+                except:
+                    duration_sec = 3.0
+                output_mp3 = f"outputs/audio/pause_{i:03d}.mp3"
+                generate_silence(duration_sec, output_mp3)
+                audio_files.append(output_mp3)
+                durations.append(duration_sec)
+                # Keep text as empty for subtitles so we don't display the number
+                d["text"] = ""
+                continue
+                
             voice = "en-GB-ThomasNeural" if speaker == "boy" else "en-US-JennyNeural"
             
             output_mp3 = f"outputs/audio/{speaker}_{i:03d}.mp3"
