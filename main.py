@@ -41,6 +41,9 @@ INDEX_HTML = """
         h1 { color: #bb86fc; }
         label { font-weight: bold; display: block; margin-top: 15px; color: #e0e0e0; }
         input[type="text"], textarea { width: 100%; padding: 12px; margin-top: 8px; border-radius: 6px; border: 1px solid #333; background: #2d2d2d; color: #fff; font-family: inherit; }
+        .radio-group { margin-top: 15px; background: #2d2d2d; padding: 15px; border-radius: 6px; }
+        .radio-group label { display: inline-block; margin-right: 20px; font-weight: normal; margin-top: 0; cursor: pointer; }
+        .radio-group input { margin-right: 8px; }
         input[type="file"] { margin-top: 8px; color: #bbb; }
         .btn { display: block; width: 100%; background: #bb86fc; color: #121212; padding: 15px; text-decoration: none; border-radius: 8px; font-weight: bold; text-align: center; font-size: 1.1em; border: none; cursor: pointer; margin-top: 25px; transition: background 0.2s; }
         .btn:hover { background: #9b59b6; }
@@ -52,14 +55,21 @@ INDEX_HTML = """
     <div class="card">
         <h1>🎙️ Create English Podcast</h1>
         <form action="/generate" method="post" enctype="multipart/form-data">
+            <label>Video Format</label>
+            <div class="radio-group">
+                <label><input type="radio" name="video_type" value="long" checked> Long Video (16:9)</label>
+                <label><input type="radio" name="video_type" value="short"> Short (9:16)</label>
+            </div>
+
             <label>Topic</label>
             <input type="text" name="topic" placeholder="e.g., Day 1 of 30 Days English Speaking Challenge" required>
             
             <label>Script (Use BOY: and GIRL: labels)</label>
             <textarea name="script" rows="15" required placeholder="BOY:\nHey everyone, welcome to today's podcast.\n\nGIRL:\nHi everyone! Today we're going to learn..."></textarea>
             
-            <label>Background Image (16:9 recommended)</label>
+            <label>Background Image</label>
             <input type="file" name="bg_image" accept="image/*" required>
+            <span class="help">Upload 16:9 for long video, or 9:16 for shorts.</span>
             
             <label>Thumbnail Image</label>
             <input type="file" name="thumbnail" accept="image/*" required>
@@ -141,10 +151,10 @@ def generate_silence(duration, output_file):
     ]
     subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
 
-def run_pipeline(topic, script_text, bg_path, thumb_path):
+def run_pipeline(topic, script_text, bg_path, thumb_path, video_type="long"):
     try:
         log_msg("--- STARTING PIPELINE ---")
-        log_msg(f"Topic: {topic}")
+        log_msg(f"Topic: {topic} (Format: {video_type})")
         
         intro_text = """
 BOY:
@@ -223,13 +233,27 @@ Let's begin.
         # 5. Video Assembly
         log_msg("Assembling video...")
         final_video = "outputs/video/final_video.mp4"
-        video_result = assemble_podcast_video(bg_path, final_audio, sub_file, final_video)
+        video_result = assemble_podcast_video(bg_path, final_audio, sub_file, final_video, video_type)
         if not video_result:
             raise Exception("Video assembly failed.")
             
         # 6. YouTube Metadata
         log_msg("Generating YouTube metadata...")
         metadata = generate_metadata(topic, script_text)
+        
+        # Adjust metadata for shorts
+        title = metadata.get("title", f"{topic}")
+        desc = metadata.get("description", topic)
+        tags = metadata.get("tags", [])
+        
+        if video_type == "short":
+            if "#shorts" not in title.lower():
+                title += " #shorts"
+            if "#shorts" not in desc.lower():
+                desc += "\n#shorts"
+            if "shorts" not in [t.lower() for t in tags]:
+                tags.append("shorts")
+                
         with open("outputs/youtube/metadata.json", "w") as f:
             json.dump(metadata, f, indent=2)
             
@@ -237,10 +261,10 @@ Let's begin.
         log_msg("Uploading to YouTube...")
         url = upload_video(
             video_file=final_video,
-            title=metadata.get("title", f"{topic} #shorts"),
-            description=metadata.get("description", topic),
+            title=title,
+            description=desc,
             thumbnail_file=thumb_path,
-            tags=metadata.get("tags", []),
+            tags=tags,
             privacy="public" # Set to public so video is visible to everyone
         )
         
@@ -261,6 +285,7 @@ def index():
 def generate():
     topic = request.form.get('topic')
     script = request.form.get('script')
+    video_type = request.form.get('video_type', 'long')
     
     bg = request.files.get('bg_image')
     thumb = request.files.get('thumbnail')
@@ -272,7 +297,7 @@ def generate():
         thumb.save(thumb_path)
         
         # Start in background
-        thread = threading.Thread(target=run_pipeline, args=(topic, script, bg_path, thumb_path), daemon=True)
+        thread = threading.Thread(target=run_pipeline, args=(topic, script, bg_path, thumb_path, video_type), daemon=True)
         thread.start()
         
         return """
