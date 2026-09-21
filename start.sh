@@ -40,9 +40,4 @@ fi
 # Launch Gunicorn
 echo "Launching Gunicorn on port $PORT..."
 export PYTHONPATH=.
-exec gunicorn main:app \
-    --bind "0.0.0.0:$PORT" \
-    --workers 1 \
-    --threads 4 \
-    --timeout 120 \
-    --log-level debug
+exec gunicorn main:app --bind "0.0.0.0:$PORT" --workers 1 --threads 4 --timeout 120 --log-level debug # end
