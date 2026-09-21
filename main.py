@@ -100,13 +100,14 @@ def parse_script(script_text):
         if not line:
             continue
             
-        if line.upper() == 'BOY:':
-            if current_speaker:
+        upper_line = line.upper().replace(' ', '')
+        if upper_line in ('BOY:', '[BOY]', 'BOY'):
+            if current_speaker and current_text:
                 dialogues.append({"speaker": current_speaker, "text": " ".join(current_text)})
             current_speaker = "boy"
             current_text = []
-        elif line.upper() == 'GIRL:':
-            if current_speaker:
+        elif upper_line in ('GIRL:', '[GIRL]', 'GIRL'):
+            if current_speaker and current_text:
                 dialogues.append({"speaker": current_speaker, "text": " ".join(current_text)})
             current_speaker = "girl"
             current_text = []
