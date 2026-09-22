@@ -4,11 +4,11 @@ import subprocess
 
 def safe_print(msg):
     try:
-        print(msg)
+        print(msg, flush=True)
     except UnicodeEncodeError:
         try:
             # Fallback to ASCII with replacement characters for Windows CMD/PS
-            print(str(msg).encode('ascii', 'replace').decode('ascii'))
+            print(str(msg).encode('ascii', 'replace').decode('ascii'), flush=True)
         except:
             pass
 
