@@ -11,25 +11,32 @@ async def _amain_edge_tts(text: str, output_file: str, voice: str):
     communicate = edge_tts.Communicate(text, voice)
     await communicate.save(output_file)
 
-def generate_voice(text: str, output_file: str, voice_name: str) -> bool:
+def generate_voice(text: str, output_file: str, voice_name: str, max_retries: int = 3) -> bool:
     """
     Generate voiceover using native edge_tts python library.
     Returns True if successful, False otherwise.
     """
-    try:
-        os.makedirs(os.path.dirname(output_file), exist_ok=True)
-        # Run the async function synchronously with a strict timeout
-        asyncio.run(asyncio.wait_for(_amain_edge_tts(text, output_file, voice_name), timeout=60.0))
-        if os.path.exists(output_file):
-            safe_print(f"[VOICE] Edge TTS success: {output_file}")
-            return True
-        return False
-    except asyncio.TimeoutError:
-        safe_print(f"[VOICE] Edge TTS native timed out after 60 seconds for voice {voice_name}!")
-        return False
-    except Exception as e:
-        safe_print(f"[VOICE] Edge TTS exception: {e}")
-        return False
+    import time
+    os.makedirs(os.path.dirname(output_file), exist_ok=True)
+    
+    for attempt in range(1, max_retries + 1):
+        try:
+            # Run the async function synchronously with a strict timeout
+            asyncio.run(asyncio.wait_for(_amain_edge_tts(text, output_file, voice_name), timeout=60.0))
+            if os.path.exists(output_file):
+                safe_print(f"[VOICE] Edge TTS success: {output_file}")
+                return True
+        except asyncio.TimeoutError:
+            safe_print(f"[VOICE] Attempt {attempt} - Edge TTS timed out for voice {voice_name}!")
+        except Exception as e:
+            safe_print(f"[VOICE] Attempt {attempt} - Edge TTS exception: {e}")
+            
+        if attempt < max_retries:
+            wait_time = attempt * 2  # Exponential-ish backoff: 2s, 4s, etc.
+            safe_print(f"[VOICE] Retrying in {wait_time} seconds...")
+            time.sleep(wait_time)
+            
+    return False
 
 if __name__ == "__main__":
     import sys
