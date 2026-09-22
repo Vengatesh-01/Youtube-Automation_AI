@@ -104,7 +104,7 @@ def log_msg(msg):
 def parse_script(script_text):
     import re
     lines = script_text.split('\n')
-    dialogues = []
+    raw_dialogues = []
     current_speaker = None
     current_text = []
     
@@ -112,7 +112,7 @@ def parse_script(script_text):
         if current_speaker and current_text:
             text = " ".join(current_text).strip()
             if text:
-                dialogues.append({"speaker": current_speaker, "text": text})
+                raw_dialogues.append({"speaker": current_speaker, "text": text})
     
     for line in lines:
         line = line.strip()
@@ -136,7 +136,7 @@ def parse_script(script_text):
             current_text = []
         elif upper_line in ('PAUSE:', '[PAUSE]', 'PAUSE'):
             flush()
-            dialogues.append({"speaker": "pause", "text": "2.0"})
+            raw_dialogues.append({"speaker": "pause", "text": "2.0"})
             current_text = []
         else:
             # Check for [PAUSE X SECONDS] or [PAUSE X] inline format
@@ -144,13 +144,28 @@ def parse_script(script_text):
             if pause_match:
                 flush()
                 duration = pause_match.group(1)
-                dialogues.append({"speaker": "pause", "text": duration})
+                raw_dialogues.append({"speaker": "pause", "text": duration})
                 current_text = []
             elif current_speaker:
                 current_text.append(line)
                 
     flush()
-    return dialogues
+    
+    # Merge consecutive same-speaker dialogues into one TTS request.
+    # This reduces 120+ individual TTS calls down to ~30-40,
+    # preventing Edge TTS rate limiting on long scripts.
+    merged = []
+    for d in raw_dialogues:
+        if d["speaker"] == "pause":
+            merged.append(d)
+        elif merged and merged[-1]["speaker"] == d["speaker"]:
+            # Same speaker as last entry — append text
+            merged[-1]["text"] = merged[-1]["text"] + " " + d["text"]
+        else:
+            merged.append({"speaker": d["speaker"], "text": d["text"]})
+    
+    return merged
+
 
 
 def assemble_audio(audio_files, output_file):
