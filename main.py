@@ -3,6 +3,7 @@ main.py — Simplified YouTube Automation Orchestrator
 """
 
 import os
+import sys
 import time
 import threading
 import subprocess
@@ -96,6 +97,7 @@ def log_msg(msg):
     ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     line = f"[{ts}] {msg}"
     safe_print(line)
+    sys.stdout.flush()  # Force terminal output from background threads
     with open("outputs/pipeline.log", "a", encoding="utf-8") as f:
         f.write(line + "\n")
 
@@ -212,9 +214,16 @@ Let's begin.
             voice = "en-US-GuyNeural" if speaker == "boy" else "en-US-JennyNeural"
             
             output_mp3 = f"outputs/audio/{speaker}_{i:03d}.mp3"
-            success = generate_voice(text, output_mp3, voice)
-            if not success:
-                raise Exception(f"TTS generation failed for {speaker} dialogue {i}")
+            
+            # Skip already-generated files so pipeline can resume after failure
+            if os.path.exists(output_mp3) and os.path.getsize(output_mp3) > 0:
+                log_msg(f"Skipping TTS for {speaker} dialogue {i} (already generated)")
+            else:
+                success = generate_voice(text, output_mp3, voice)
+                if not success:
+                    raise Exception(f"TTS generation failed for {speaker} dialogue {i}")
+                # Small delay between TTS requests to avoid Edge TTS rate limiting
+                time.sleep(0.5)
                 
             audio_files.append(output_mp3)
             # Measure duration
