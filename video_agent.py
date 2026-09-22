@@ -22,16 +22,14 @@ def assemble_podcast_video(background_image, final_audio, subtitle_file, output_
     sub_rel = os.path.relpath(subtitle_file).replace('\\', '/')
     
     if video_type == "short":
-        # 9:16 aspect ratio for shorts
+        # No subtitles for shorts
         # [0:v] scale and crop background to 1080x1920
         # [1:a] generate waveform (cyan, centered line, 400x100 size for narrow screen)
         # [bg][wave] overlay waveform at the bottom center
-        # [v_over] add subtitles (Middle center Alignment=5, or Top Center Alignment=8 with large margin)
         filter_complex = (
             "[0:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920[bg]; "
             "[1:a]showwaves=s=400x120:mode=cline:colors=cyan[wave]; "
-            "[bg][wave]overlay=(W-w)/2:H-h-200[v_over]; "
-            f"[v_over]subtitles='{sub_rel}':force_style='Fontname=Arial Bold,Fontsize=70,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BorderStyle=1,Outline=3,Shadow=0,Alignment=2,MarginV=300'[outv]"
+            "[bg][wave]overlay=(W-w)/2:H-h-200[outv]"
         )
     else:
         # 16:9 aspect ratio for long videos
@@ -39,7 +37,7 @@ def assemble_podcast_video(background_image, final_audio, subtitle_file, output_
             "[0:v]scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080[bg]; "
             "[1:a]showwaves=s=600x150:mode=cline:colors=cyan[wave]; "
             "[bg][wave]overlay=(W-w)/2:H-h-150[v_over]; "
-            f"[v_over]subtitles='{sub_rel}':force_style='Fontname=Arial Bold,Fontsize=64,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BorderStyle=1,Outline=3,Shadow=0,Alignment=2,MarginV=50'[outv]"
+            f"[v_over]subtitles='{sub_rel}':force_style='Fontname=Arial Bold,Fontsize=45,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BorderStyle=1,Outline=2,Shadow=0,Alignment=2,MarginV=30'[outv]"
         )
 
     cmd = [
