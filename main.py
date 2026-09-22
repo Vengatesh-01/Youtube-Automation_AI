@@ -222,8 +222,8 @@ Let's begin.
                 success = generate_voice(text, output_mp3, voice)
                 if not success:
                     raise Exception(f"TTS generation failed for {speaker} dialogue {i}")
-                # Small delay between TTS requests to avoid Edge TTS rate limiting
-                time.sleep(0.5)
+                # Delay between TTS requests to avoid Edge TTS rate limiting
+                time.sleep(1.5)
                 
             audio_files.append(output_mp3)
             # Measure duration

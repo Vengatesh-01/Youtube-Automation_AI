@@ -1,14 +1,16 @@
 import os
+import sys
 import shutil
 import subprocess
 
 def safe_print(msg):
+    """Print to stderr so output is always visible in VS Code terminal, even from Flask background threads."""
     try:
-        print(msg, flush=True)
+        print(msg, file=sys.stderr, flush=True)
     except UnicodeEncodeError:
         try:
             # Fallback to ASCII with replacement characters for Windows CMD/PS
-            print(str(msg).encode('ascii', 'replace').decode('ascii'), flush=True)
+            print(str(msg).encode('ascii', 'replace').decode('ascii'), file=sys.stderr, flush=True)
         except:
             pass
 
