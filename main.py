@@ -102,40 +102,56 @@ def log_msg(msg):
         f.write(line + "\n")
 
 def parse_script(script_text):
+    import re
     lines = script_text.split('\n')
     dialogues = []
     current_speaker = None
     current_text = []
     
+    def flush():
+        if current_speaker and current_text:
+            text = " ".join(current_text).strip()
+            if text:
+                dialogues.append({"speaker": current_speaker, "text": text})
+    
     for line in lines:
         line = line.strip()
         if not line:
             continue
-            
+        
         upper_line = line.upper().replace(' ', '')
+        
+        # Speaker labels
         if upper_line in ('BOY:', '[BOY]', 'BOY'):
-            if current_speaker and current_text:
-                dialogues.append({"speaker": current_speaker, "text": " ".join(current_text)})
+            flush()
             current_speaker = "boy"
             current_text = []
         elif upper_line in ('GIRL:', '[GIRL]', 'GIRL'):
-            if current_speaker and current_text:
-                dialogues.append({"speaker": current_speaker, "text": " ".join(current_text)})
+            flush()
             current_speaker = "girl"
             current_text = []
+        elif upper_line in ('BOTH:', '[BOTH]', 'BOTH'):
+            flush()
+            current_speaker = "boy"  # Use boy voice for BOTH
+            current_text = []
         elif upper_line in ('PAUSE:', '[PAUSE]', 'PAUSE'):
-            if current_speaker and current_text:
-                dialogues.append({"speaker": current_speaker, "text": " ".join(current_text)})
-            current_speaker = "pause"
+            flush()
+            dialogues.append({"speaker": "pause", "text": "2.0"})
             current_text = []
         else:
-            if current_speaker:
+            # Check for [PAUSE X SECONDS] or [PAUSE X] inline format
+            pause_match = re.match(r'\[PAUSE\s*([\d.]+)\s*(?:SECONDS?)?\]', line, re.IGNORECASE)
+            if pause_match:
+                flush()
+                duration = pause_match.group(1)
+                dialogues.append({"speaker": "pause", "text": duration})
+                current_text = []
+            elif current_speaker:
                 current_text.append(line)
                 
-    if current_speaker and current_text:
-        dialogues.append({"speaker": current_speaker, "text": " ".join(current_text)})
-        
+    flush()
     return dialogues
+
 
 def assemble_audio(audio_files, output_file):
     list_file = "outputs/audio/concat_list.txt"
