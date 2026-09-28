@@ -305,7 +305,7 @@ Let's begin.
             json.dump(metadata, f, indent=2)
             
         # 7. YouTube Upload
-        log_msg("Uploading to YouTube...")
+        log_msg(f"Uploading to YouTube... [title={repr(title)}]")
         url = upload_video(
             video_file=final_video,
             title=title,

@@ -33,12 +33,25 @@ Generate SEO-optimized metadata for this video in JSON format EXACTLY matching t
 Do NOT include markdown formatting like ```json ... ```, just output the raw JSON.
 Ensure tags are highly relevant to English learning, speaking practice, etc.
 """
+    # Try models in order of preference, falling back if unavailable
+    MODELS_TO_TRY = ['gemini-2.0-flash-lite', 'gemini-1.5-flash', 'gemini-2.5-flash', 'gemini-3.8-flash']
     try:
         client = genai.Client(api_key=api_key)
-        response = client.models.generate_content(
-            model='gemini-2.5-flash',
-            contents=prompt,
-        )
+        response = None
+        last_err = None
+        for model_name in MODELS_TO_TRY:
+            try:
+                response = client.models.generate_content(
+                    model=model_name,
+                    contents=prompt,
+                )
+                safe_print(f"[Metadata] Using model: {model_name}")
+                break
+            except Exception as model_err:
+                safe_print(f"[Metadata] Model {model_name} unavailable: {model_err}")
+                last_err = model_err
+        if response is None:
+            raise last_err
         
         import json
         text = response.text.strip()
