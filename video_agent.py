@@ -4,9 +4,24 @@ Creates a 16:9 video with a static background image, audio track, and burnt-in s
 """
 
 import os
+import platform
 import subprocess
 import time
 from utils import safe_print, get_ffmpeg
+
+def get_ffmpeg_subtitle_path(path):
+    """
+    Return a path string safe for use inside FFmpeg filter_complex on Windows.
+    FFmpeg subtitle filter requires:
+      - Forward slashes
+      - Escaped colon after drive letter (C: → C\\:)
+    """
+    abs_path = os.path.abspath(path).replace('\\', '/')
+    if platform.system() == 'Windows':
+        # Escape the drive letter colon: C:/path → C\:/path
+        if len(abs_path) > 1 and abs_path[1] == ':':
+            abs_path = abs_path[0] + '\\:' + abs_path[2:]
+    return abs_path
 
 def assemble_podcast_video(background_image, final_audio, subtitle_file, output_video, video_type="long"):
     """
@@ -18,8 +33,8 @@ def assemble_podcast_video(background_image, final_audio, subtitle_file, output_
 
     ffmpeg = get_ffmpeg()
 
-    # Convert paths to relative or forward-slashes for the subtitles filter
-    sub_rel = os.path.relpath(subtitle_file).replace('\\', '/')
+    # Get Windows-safe absolute path for subtitle filter
+    sub_safe = get_ffmpeg_subtitle_path(subtitle_file)
     
     if video_type == "short":
         # No subtitles for shorts
@@ -37,7 +52,7 @@ def assemble_podcast_video(background_image, final_audio, subtitle_file, output_
             "[0:v]scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080[bg]; "
             "[1:a]showwaves=s=600x150:mode=cline:colors=cyan[wave]; "
             "[bg][wave]overlay=(W-w)/2:H-h-150[v_over]; "
-            f"[v_over]subtitles='{sub_rel}':force_style='Fontname=Arial Bold,Fontsize=45,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BorderStyle=1,Outline=2,Shadow=0,Alignment=2,MarginV=30'[outv]"
+            f"[v_over]subtitles='{sub_safe}':force_style='Fontname=Arial Bold,Fontsize=18,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BackColour=&H80000000,BorderStyle=4,Outline=1,Shadow=0,Alignment=2,MarginV=50'[outv]"
         )
 
     cmd = [
