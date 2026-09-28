@@ -30,6 +30,10 @@ os.makedirs('outputs/video', exist_ok=True)
 os.makedirs('outputs/subtitles', exist_ok=True)
 os.makedirs('outputs/youtube', exist_ok=True)
 
+# Lock to prevent concurrent pipeline runs corrupting shared output files
+_pipeline_lock = threading.Lock()
+_pipeline_running = False
+
 # --- UI Templates ---
 INDEX_HTML = """
 <!DOCTYPE html>
@@ -185,6 +189,7 @@ def generate_silence(duration, output_file):
     subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
 
 def run_pipeline(topic, script_text, bg_path, thumb_path, video_type="long"):
+    global _pipeline_running
     try:
         log_msg("--- STARTING PIPELINE ---")
         log_msg(f"Topic: {topic} (Format: {video_type})")
@@ -282,8 +287,9 @@ Let's begin.
         log_msg("Generating YouTube metadata...")
         metadata = generate_metadata(topic, script_text)
         
-        # Adjust metadata for shorts
-        title = metadata.get("title", f"{topic}")
+        # Adjust metadata for shorts — ensure title is never empty
+        title = metadata.get("title", "") or topic or "English Practice Podcast"
+        title = title.strip() or "English Practice Podcast"
         desc = metadata.get("description", topic)
         tags = metadata.get("tags", [])
         
@@ -316,6 +322,10 @@ Let's begin.
 
     except Exception as e:
         log_msg(f"❌ PIPELINE ERROR: {str(e)}")
+    finally:
+        global _pipeline_running
+        _pipeline_running = False
+        log_msg("--- PIPELINE FINISHED ---")
 
 
 @app.route('/')
@@ -332,6 +342,20 @@ def generate():
     thumb = request.files.get('thumbnail')
     
     if bg and thumb and bg.filename and thumb.filename:
+        # Block concurrent pipeline runs
+        global _pipeline_running
+        if _pipeline_running:
+            return """
+            <html>
+                <body style="font-family: sans-serif; text-align: center; padding: 50px; background:#121212; color:#fff;">
+                    <h1 style="color:#ff5555;">⏳ Pipeline Already Running!</h1>
+                    <p>Please wait for the current video to finish before starting a new one.</p>
+                    <p>Check the <a href="/" style="color:#bb86fc;">logs on the dashboard</a> for progress.</p>
+                    <script>setTimeout(() => { window.location.href = "/"; }, 4000);</script>
+                </body>
+            </html>
+            """
+        _pipeline_running = True
         bg_path = os.path.join(app.config['UPLOAD_FOLDER'], "bg_" + secure_filename(bg.filename))
         thumb_path = os.path.join(app.config['UPLOAD_FOLDER'], "thumb_" + secure_filename(thumb.filename))
         bg.save(bg_path)

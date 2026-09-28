@@ -7,11 +7,12 @@ def generate_metadata(topic: str, script_text: str):
     Generate YouTube Title, Description, and Tags based on the topic and script.
     """
     api_key = os.environ.get("GEMINI_API_KEY")
+    safe_topic = topic.strip() if topic and topic.strip() else "English Practice"
     if not api_key:
         safe_print("[Metadata] GEMINI_API_KEY not found. Using simple fallback metadata.")
         return {
-            "title": f"{topic} | English Podcast",
-            "description": f"Listen to our podcast about {topic}.\n\n#english #podcast #learning",
+            "title": f"{safe_topic} | English Podcast",
+            "description": f"Listen to our podcast about {safe_topic}.\n\n#english #podcast #learning",
             "tags": ["english", "podcast", "learning", "spoken english"]
         }
 
@@ -35,7 +36,7 @@ Ensure tags are highly relevant to English learning, speaking practice, etc.
     try:
         client = genai.Client(api_key=api_key)
         response = client.models.generate_content(
-            model='gemini-2.0-flash',
+            model='gemini-2.5-flash',
             contents=prompt,
         )
         
@@ -54,7 +55,7 @@ Ensure tags are highly relevant to English learning, speaking practice, etc.
     except Exception as e:
         safe_print(f"[Metadata] Error generating metadata: {e}")
         return {
-            "title": f"{topic} | English Podcast",
-            "description": f"Listen to our podcast about {topic}.\n\n#english #podcast #learning",
+            "title": f"{safe_topic} | English Podcast",
+            "description": f"Listen to our podcast about {safe_topic}.\n\n#english #podcast #learning",
             "tags": ["english", "podcast", "learning", "spoken english"]
         }
