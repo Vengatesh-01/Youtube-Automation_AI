@@ -287,9 +287,15 @@ Let's begin.
         log_msg("Generating YouTube metadata...")
         metadata = generate_metadata(topic, script_text)
         
-        # Adjust metadata for shorts — ensure title is never empty
+        # Adjust metadata for shorts — ensure title is never empty or invalid
         title = metadata.get("title", "") or topic or "English Practice Podcast"
         title = title.strip() or "English Practice Podcast"
+        # Strip characters YouTube rejects (< > angle brackets, leading/trailing special chars)
+        import re as _re
+        title = _re.sub(r'[<>]', '', title)          # strip < >
+        title = title.encode('ascii', 'ignore').decode('ascii').strip()  # strip non-ASCII (emojis)
+        title = title.strip(' |:-') or "English Practice Podcast"        # strip stray separators
+        title = title[:100]                           # YouTube max title length
         desc = metadata.get("description", topic)
         tags = metadata.get("tags", [])
         
