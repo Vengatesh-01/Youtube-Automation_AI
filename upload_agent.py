@@ -112,6 +112,12 @@ def upload_video(
     if tags is None:
         tags = ["automation", "trending"]
 
+    # Guard: reject empty or whitespace-only titles immediately
+    title = (title or "").strip()
+    if not title:
+        safe_print("❌ [YouTube] Upload aborted: video title is empty. Please provide a valid title.")
+        return None
+
     # Check for credentials before starting (files or environment variables)
     has_credentials = (
         os.path.exists(CLIENT_SECRETS_FILE) or 
@@ -194,13 +200,28 @@ def upload_video(
             if status:
                 safe_print(f"  Upload progress: {int(status.progress() * 100)}%")
             retry_count = 0  # reset on success
-        except (HttpError, ConnectionResetError, ConnectionAbortedError,
-                TimeoutError, socket.timeout, OSError) as e:
+        except HttpError as e:
+            # 4xx errors are permanent (bad request, invalid title, etc.) — do NOT retry
+            if e.resp.status < 500:
+                safe_print(f"❌ [YouTube] Permanent API error ({e.resp.status}): {e}")
+                raise
+            # 5xx errors are transient — retry with backoff
             retry_count += 1
             if retry_count > MAX_RETRIES:
                 safe_print(f"❌ [YouTube] Upload failed after {MAX_RETRIES} retries: {e}")
                 raise
-            wait_secs = min(10 * (2 ** (retry_count - 1)), 300)  # 10s, 20s, 40s ... max 5min
+            wait_secs = min(10 * (2 ** (retry_count - 1)), 300)
+            safe_print(f"⚠️ [YouTube] Server error (attempt {retry_count}/{MAX_RETRIES}): {e}")
+            safe_print(f"   Retrying in {wait_secs}s...")
+            time.sleep(wait_secs)
+        except (ConnectionResetError, ConnectionAbortedError,
+                TimeoutError, socket.timeout, OSError) as e:
+            # Network errors — retry with backoff (upload resumes from last chunk)
+            retry_count += 1
+            if retry_count > MAX_RETRIES:
+                safe_print(f"❌ [YouTube] Upload failed after {MAX_RETRIES} retries: {e}")
+                raise
+            wait_secs = min(10 * (2 ** (retry_count - 1)), 300)
             safe_print(f"⚠️ [YouTube] Network error (attempt {retry_count}/{MAX_RETRIES}): {e}")
             safe_print(f"   Retrying in {wait_secs}s... (upload will resume from where it left off)")
             time.sleep(wait_secs)
