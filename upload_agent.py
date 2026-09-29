@@ -10,11 +10,14 @@ SETUP (one-time):
 """
 
 import os
+import time
+import socket
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
+from googleapiclient.errors import HttpError
 from typing import Optional, List
 from utils import safe_print, get_ffmpeg
 import subprocess
@@ -183,10 +186,24 @@ def upload_video(
     media = MediaFileUpload(video_file, chunksize=5 * 1024 * 1024, resumable=True, mimetype="video/mp4")
     request = youtube.videos().insert(part=",".join(body.keys()), body=body, media_body=media)
     response = None
+    MAX_RETRIES = 10
+    retry_count = 0
     while response is None:
-        status, response = request.next_chunk()
-        if status:
-            safe_print(f"  Upload progress: {int(status.progress() * 100)}%")
+        try:
+            status, response = request.next_chunk()
+            if status:
+                safe_print(f"  Upload progress: {int(status.progress() * 100)}%")
+            retry_count = 0  # reset on success
+        except (HttpError, ConnectionResetError, ConnectionAbortedError,
+                TimeoutError, socket.timeout, OSError) as e:
+            retry_count += 1
+            if retry_count > MAX_RETRIES:
+                safe_print(f"❌ [YouTube] Upload failed after {MAX_RETRIES} retries: {e}")
+                raise
+            wait_secs = min(10 * (2 ** (retry_count - 1)), 300)  # 10s, 20s, 40s ... max 5min
+            safe_print(f"⚠️ [YouTube] Network error (attempt {retry_count}/{MAX_RETRIES}): {e}")
+            safe_print(f"   Retrying in {wait_secs}s... (upload will resume from where it left off)")
+            time.sleep(wait_secs)
 
     video_id = response["id"]
 
