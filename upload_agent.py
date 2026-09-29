@@ -112,11 +112,12 @@ def upload_video(
     if tags is None:
         tags = ["automation", "trending"]
 
-    # Guard: reject empty or whitespace-only titles immediately
-    title = (title or "").strip()
+    # Guard: enforce YouTube title rules (non-empty, max 100 chars)
+    title = (title or "").strip()[:100].strip()
     if not title:
         safe_print("❌ [YouTube] Upload aborted: video title is empty. Please provide a valid title.")
         return None
+    safe_print(f"📝 [YouTube] Title ({len(title)} chars): {title}")
 
     # Check for credentials before starting (files or environment variables)
     has_credentials = (
