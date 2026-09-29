@@ -34,7 +34,7 @@ Do NOT include markdown formatting like ```json ... ```, just output the raw JSO
 Ensure tags are highly relevant to English learning, speaking practice, etc.
 """
     # Try models in order of preference, falling back if unavailable
-    MODELS_TO_TRY = ['gemini-2.0-flash-lite', 'gemini-1.5-flash', 'gemini-2.5-flash', 'gemini-3.8-flash']
+    MODELS_TO_TRY = ['gemini-3.5-flash-lite', 'gemini-2.0-flash', 'gemini-3.8-flash']
     try:
         client = genai.Client(api_key=api_key)
         response = None
