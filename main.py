@@ -87,6 +87,16 @@ INDEX_HTML = """
         <h2>📜 Recent Logs</h2>
         <pre>{{ logs }}</pre>
     </div>
+
+    {% if last_video_ready %}
+    <div class="card" style="border: 1px solid #bb86fc;">
+        <h2 style="color:#ff7043;">⚠️ Last Video Ready but Not Uploaded</h2>
+        <p style="color:#aaa;">The video was assembled but the upload failed (network error). Click below to retry the upload without re-generating the video.</p>
+        <form action="/retry_upload" method="post">
+            <button type="submit" class="btn" style="background:#ff7043;">🔁 Retry Last Upload</button>
+        </form>
+    </div>
+    {% endif %}
 </body>
 </html>
 """
@@ -193,6 +203,16 @@ def run_pipeline(topic, script_text, bg_path, thumb_path, video_type="long"):
     try:
         log_msg("--- STARTING PIPELINE ---")
         log_msg(f"Topic: {topic} (Format: {video_type})")
+
+        # 🧹 Clear ALL previous outputs so new script is always used fresh
+        import glob, shutil
+        for folder in ["outputs/audio", "outputs/subtitles", "outputs/video"]:
+            for f in glob.glob(f"{folder}/*"):
+                try:
+                    os.remove(f)
+                except Exception:
+                    pass
+        log_msg("Cleared old audio/subtitle/video outputs.")
         
         intro_text = """
 BOY:
@@ -334,9 +354,26 @@ Let's begin.
         log_msg("--- PIPELINE FINISHED ---")
 
 
+def last_video_ready():
+    """True when assembled video + metadata exist but last log line shows upload failure."""
+    video_ok = os.path.isfile("outputs/video/final_video.mp4")
+    meta_ok  = os.path.isfile("outputs/youtube/metadata.json")
+    if not (video_ok and meta_ok):
+        return False
+    # Check last pipeline result from log
+    log_lines = get_logs().splitlines()
+    for line in reversed(log_lines):
+        if "PIPELINE FINISHED" in line:
+            break
+        if "SUCCESS! Video uploaded" in line:
+            return False  # already uploaded successfully
+        if "Upload failed" in line or "PIPELINE ERROR" in line:
+            return True
+    return False
+
 @app.route('/')
 def index():
-    return render_template_string(INDEX_HTML, logs=get_logs())
+    return render_template_string(INDEX_HTML, logs=get_logs(), last_video_ready=last_video_ready())
 
 @app.route('/generate', methods=['POST'])
 def generate():
@@ -382,6 +419,81 @@ def generate():
         </html>
         """
     return "Missing inputs.", 400
+
+
+@app.route('/retry_upload', methods=['POST'])
+def retry_upload():
+    """Re-upload the last assembled video using saved metadata, no re-generation."""
+    global _pipeline_running
+    if _pipeline_running:
+        return """
+        <html><body style="font-family:sans-serif;text-align:center;padding:50px;background:#121212;color:#fff;">
+            <h1 style="color:#ff5555;">⏳ Pipeline Already Running!</h1>
+            <p>Please wait for the current pipeline to finish.</p>
+            <script>setTimeout(() => { window.location.href = "/"; }, 3000);</script>
+        </body></html>
+        """
+
+    video_file    = "outputs/video/final_video.mp4"
+    metadata_file = "outputs/youtube/metadata.json"
+
+    if not os.path.isfile(video_file) or not os.path.isfile(metadata_file):
+        return "<p style='color:red'>No assembled video or metadata found.</p>", 400
+
+    def _do_retry():
+        global _pipeline_running
+        _pipeline_running = True
+        try:
+            import json, re as _re
+            with open(metadata_file, "r", encoding="utf-8") as fh:
+                meta = json.load(fh)
+            title = meta.get("title", "").strip()
+            title = _re.sub(r'[<>]', '', title)
+            title = title.encode('ascii', 'ignore').decode('ascii').strip()
+            title = title.strip(' |:-') or "English Practice Podcast"
+            title = title[:100]
+            desc  = meta.get("description", "")
+            tags  = meta.get("tags", [])
+
+            # Find latest thumbnail
+            inputs_dir = app.config['UPLOAD_FOLDER']
+            thumbs = sorted(
+                [f for f in os.listdir(inputs_dir) if f.startswith("thumb_")],
+                key=lambda f: os.path.getmtime(os.path.join(inputs_dir, f)),
+                reverse=True
+            )
+            thumb = os.path.join(inputs_dir, thumbs[0]) if thumbs else None
+
+            log_msg(f"🔁 Retrying upload... title={repr(title)}")
+            url = upload_video(
+                video_file=video_file,
+                title=title,
+                description=desc,
+                thumbnail_file=thumb,
+                tags=tags,
+                privacy="public",
+            )
+            if url:
+                log_msg(f"✅ Retry SUCCESS! Video uploaded: {url}")
+            else:
+                log_msg("❌ Retry upload failed. Check credentials or internet connection.")
+        except Exception as exc:
+            log_msg(f"❌ Retry error: {exc}")
+        finally:
+            _pipeline_running = False
+            log_msg("--- RETRY FINISHED ---")
+
+    _pipeline_running = True
+    threading.Thread(target=_do_retry, daemon=True).start()
+
+    return """
+    <html><body style="font-family:sans-serif;text-align:center;padding:50px;background:#121212;color:#fff;">
+        <h1 style="color:#bb86fc;">🔁 Retry Upload Triggered!</h1>
+        <p>Uploading the last assembled video in the background.</p>
+        <p><a href="/" style="color:#bb86fc;">Return to Dashboard to view logs</a></p>
+        <script>setTimeout(() => { window.location.href = "/"; }, 3000);</script>
+    </body></html>
+    """
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080))
