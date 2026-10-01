@@ -232,14 +232,39 @@ def upload_video(
     # Set thumbnail if provided
     if thumbnail_file and os.path.isfile(str(thumbnail_file)):
         safe_print(f"🖼️ [YouTube] Setting thumbnail: {thumbnail_file}")
-        try:
-            youtube.thumbnails().set(
-                videoId=video_id,
-                media_body=MediaFileUpload(str(thumbnail_file))
-            ).execute()
-        except Exception as e:
-            safe_print(f"  ⚠️ Warning: Thumbnail upload failed: {e}")
-            safe_print("  Video upload was successful, but the thumbnail could not be set (possibly account verification required).")
+
+        # Detect correct MIME type — YouTube rejects thumbnails with wrong/missing mimetype
+        ext = os.path.splitext(str(thumbnail_file))[1].lower()
+        mime_map = {
+            ".jpg":  "image/jpeg",
+            ".jpeg": "image/jpeg",
+            ".png":  "image/png",
+            ".webp": "image/webp",
+        }
+        thumb_mime = mime_map.get(ext, "image/jpeg")
+        safe_print(f"   MIME type: {thumb_mime}")
+
+        # YouTube needs a brief moment to register the video before accepting the thumbnail
+        safe_print("   Waiting 5s for YouTube to finish registering the video...")
+        time.sleep(5)
+
+        thumb_set = False
+        for attempt in range(1, 4):  # up to 3 attempts
+            try:
+                youtube.thumbnails().set(
+                    videoId=video_id,
+                    media_body=MediaFileUpload(str(thumbnail_file), mimetype=thumb_mime)
+                ).execute()
+                safe_print("   ✅ Thumbnail set successfully.")
+                thumb_set = True
+                break
+            except Exception as e:
+                safe_print(f"  ⚠️ Thumbnail attempt {attempt}/3 failed: {e}")
+                if attempt < 3:
+                    safe_print(f"   Retrying in 10s...")
+                    time.sleep(10)
+        if not thumb_set:
+            safe_print("  ❌ Thumbnail could not be set after 3 attempts. Video upload was still successful.")
 
     url = f"https://www.youtube.com/watch?v={video_id}"
     safe_print(f"✅ [YouTube] Uploaded successfully: {url}")
