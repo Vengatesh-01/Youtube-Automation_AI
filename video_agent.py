@@ -42,7 +42,7 @@ def assemble_podcast_video(background_image, final_audio, subtitle_file, output_
         #   [avis] → waveform visualizer overlay
         #   [araw] → loudnorm + EQ + stereo → [outa]
         filter_complex = (
-            "[0:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920[bg]; "
+            "[0:v]scale=1080:1920:force_original_aspect_ratio=increase:flags=lanczos,crop=1080:1920[bg]; "
             "[1:a]asplit=2[avis][araw]; "
             "[avis]showwaves=s=400x120:mode=cline:colors=cyan[wave]; "
             "[bg][wave]overlay=(W-w)/2:H-h-200[outv]; "

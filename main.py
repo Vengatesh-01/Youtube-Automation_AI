@@ -250,7 +250,7 @@ def prepend_thumbnail_frame(thumbnail_path, video_path, output_path, duration=2.
         "-loop", "1", "-t", str(duration),
         "-i", thumbnail_path,
         "-f", "lavfi", "-i", "anullsrc=r=48000:cl=stereo",
-        "-vf", "scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920",
+        "-vf", "scale=1080:1920:force_original_aspect_ratio=increase:flags=lanczos,crop=1080:1920",
         "-c:v", "libx264", "-preset", "ultrafast", "-pix_fmt", "yuv420p",
         "-c:a", "aac", "-b:a", "256k", "-ar", "48000",
         "-shortest",
