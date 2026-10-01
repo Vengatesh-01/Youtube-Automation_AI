@@ -45,7 +45,7 @@ def assemble_podcast_video(background_image, final_audio, subtitle_file, output_
             "[0:v]scale=1080:1920:force_original_aspect_ratio=increase:flags=lanczos,crop=1080:1920[bg]; "
             "[1:a]asplit=2[avis][araw]; "
             "[avis]showwaves=s=400x120:mode=cline:colors=cyan[wave]; "
-            "[bg][wave]overlay=(W-w)/2:H-h-200[outv]; "
+            "[bg][wave]overlay=(W-w)/2:H-h-200:enable='gte(t,2)'[outv]; "
             "[araw]"
             "loudnorm=I=-14:TP=-1.5:LRA=11,"
             "equalizer=f=3000:t=o:width=2000:g=4,"

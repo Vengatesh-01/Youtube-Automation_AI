@@ -412,12 +412,13 @@ Let's begin.
         # 5b. For Shorts: prepend thumbnail image as the first 1-second still frame.
         #     YouTube Shorts displays the first video frame in the feed — burning the
         #     custom thumbnail here guarantees the correct image is always shown.
-        if video_type == "short" and thumb_path and os.path.isfile(thumb_path):
-            log_msg("Prepending thumbnail frame to Short (ensures correct thumbnail in feed)...")
-            prepend_thumbnail_frame(thumb_path, raw_video, final_video, duration=1.0)
-        else:
-            import shutil
-            shutil.copy2(raw_video, final_video)
+        # 5b. The waveform overlay in video_agent.py is delayed 2 seconds for Shorts
+        #     (enable='gte(t,2)'), so the first 2 seconds are always a clean background
+        #     image — YouTube uses this first frame as the Shorts feed thumbnail.
+        #     No separate prepend/concat step needed.
+        import shutil
+        shutil.copy2(raw_video, final_video)
+
             
         # 6. YouTube Metadata
         log_msg("Generating YouTube metadata...")
