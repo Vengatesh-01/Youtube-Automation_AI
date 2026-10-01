@@ -245,8 +245,8 @@ def upload_video(
         safe_print(f"   MIME type: {thumb_mime}")
 
         # YouTube needs a brief moment to register the video before accepting the thumbnail
-        safe_print("   Waiting 5s for YouTube to finish registering the video...")
-        time.sleep(5)
+        safe_print("   Waiting 8s for YouTube to finish registering the video...")
+        time.sleep(8)
 
         thumb_set = False
         for attempt in range(1, 4):  # up to 3 attempts
@@ -255,16 +255,18 @@ def upload_video(
                     videoId=video_id,
                     media_body=MediaFileUpload(str(thumbnail_file), mimetype=thumb_mime)
                 ).execute()
-                safe_print("   ✅ Thumbnail set successfully.")
+                safe_print(f"   ✅ Thumbnail set successfully for video {video_id}.")
                 thumb_set = True
                 break
             except Exception as e:
                 safe_print(f"  ⚠️ Thumbnail attempt {attempt}/3 failed: {e}")
                 if attempt < 3:
-                    safe_print(f"   Retrying in 10s...")
-                    time.sleep(10)
+                    safe_print(f"   Retrying in 15s...")
+                    time.sleep(15)
         if not thumb_set:
-            safe_print("  ❌ Thumbnail could not be set after 3 attempts. Video upload was still successful.")
+            safe_print(f"  ❌ Thumbnail could not be set after 3 attempts for video {video_id}.")
+    else:
+        safe_print(f"⚠️ [YouTube] No valid thumbnail_file provided — skipping thumbnail set. (got: {thumbnail_file})")
 
     url = f"https://www.youtube.com/watch?v={video_id}"
     safe_print(f"✅ [YouTube] Uploaded successfully: {url}")
