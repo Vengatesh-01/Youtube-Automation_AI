@@ -62,8 +62,8 @@ INDEX_HTML = """
         <form action="/generate" method="post" enctype="multipart/form-data">
             <label>Video Format</label>
             <div class="radio-group">
-                <label><input type="radio" name="video_type" value="long" checked> Long Video (16:9)</label>
-                <label><input type="radio" name="video_type" value="short"> Short (9:16)</label>
+                <label><input type="radio" name="video_type" value="long" checked id="fmt_long"> Long Video (16:9)</label>
+                <label><input type="radio" name="video_type" value="short" id="fmt_short"> Short (9:16)</label>
             </div>
 
             <label>Topic</label>
@@ -72,15 +72,39 @@ INDEX_HTML = """
             <label>Script (Use BOY: and GIRL: labels)</label>
             <textarea name="script" rows="15" required placeholder="BOY:\nHey everyone, welcome to today's podcast.\n\nGIRL:\nHi everyone! Today we're going to learn..."></textarea>
             
-            <label>Background Image</label>
-            <input type="file" name="bg_image" accept="image/*" required>
-            <span class="help">Upload 16:9 for long video, or 9:16 for shorts.</span>
+            <label id="bg_label">Background Image</label>
+            <input type="file" name="bg_image" id="bg_image" accept="image/*" required>
+            <span class="help" id="bg_help">Upload 16:9 for long video, or 9:16 for shorts.</span>
             
-            <label>Thumbnail Image</label>
-            <input type="file" name="thumbnail" accept="image/*" required>
+            <div id="thumb_section">
+                <label>Thumbnail Image</label>
+                <input type="file" name="thumbnail" id="thumbnail" accept="image/*">
+                <span class="help">Separate thumbnail for long videos.</span>
+            </div>
             
             <button type="submit" class="btn">🚀 Generate & Upload</button>
         </form>
+        <script>
+            function updateImageFields() {
+                var isShort = document.getElementById('fmt_short').checked;
+                var thumbSection = document.getElementById('thumb_section');
+                var bgHelp = document.getElementById('bg_help');
+                var bgLabel = document.getElementById('bg_label');
+                if (isShort) {
+                    thumbSection.style.display = 'none';
+                    document.getElementById('thumbnail').removeAttribute('required');
+                    bgHelp.textContent = 'Upload your 9:16 image — used as both background and thumbnail.';
+                    bgLabel.textContent = 'Background & Thumbnail Image';
+                } else {
+                    thumbSection.style.display = 'block';
+                    bgHelp.textContent = 'Upload 16:9 for long video, or 9:16 for shorts.';
+                    bgLabel.textContent = 'Background Image';
+                }
+            }
+            document.getElementById('fmt_long').addEventListener('change', updateImageFields);
+            document.getElementById('fmt_short').addEventListener('change', updateImageFields);
+            updateImageFields();
+        </script>
     </div>
     
     <div class="card">
@@ -207,54 +231,38 @@ def parse_script(script_text):
 
 
 
-def prepend_thumbnail_frame(thumbnail_path, video_path, output_path, duration=1.0):
+def prepend_thumbnail_frame(thumbnail_path, video_path, output_path, duration=2.0):
     """
     Prepend the thumbnail image as a still frame at the start of the video.
     YouTube Shorts uses the first frame as the feed thumbnail, so burning
     the custom thumbnail image here guarantees it appears in the Shorts feed.
+
+    Uses full re-encode during concat to avoid codec/sample-rate mismatch
+    failures that cause the concat to silently fall back to the original video.
     """
     ffmpeg = get_ffmpeg()
-    thumb_clip = "outputs/video/thumb_frame.mp4"
+    thumb_clip_audio = "outputs/video/thumb_frame_audio.mp4"
 
-    # Detect video dimensions from the main video
-    probe_cmd = [
+    # Step 1: Create thumbnail still clip WITH silent audio, matching the main
+    #         video's audio spec (48000 Hz stereo AAC) so concat always works.
+    thumb_cmd = [
         ffmpeg, "-y", "-nostdin",
         "-loop", "1", "-t", str(duration),
         "-i", thumbnail_path,
+        "-f", "lavfi", "-i", "anullsrc=r=48000:cl=stereo",
         "-vf", "scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920",
-        "-c:v", "libx264", "-preset", "ultrafast",
-        "-pix_fmt", "yuv420p",
-        "-an",  # no audio on the thumbnail frame
-        thumb_clip
-    ]
-    r1 = subprocess.run(probe_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
-    if r1.returncode != 0:
-        safe_print(f"⚠️ Could not create thumbnail frame clip: {r1.stderr.decode('utf-8', errors='replace')[-300:]}")
-        return video_path  # fall back to original
-
-    # Create a silent audio clip of the same duration to match the thumbnail frame
-    silence_clip = "outputs/video/thumb_silence.mp3"
-    sil_cmd = [
-        ffmpeg, "-y", "-nostdin",
-        "-f", "lavfi", "-i", f"anullsrc=r=44100:cl=stereo",
-        "-t", str(duration), "-q:a", "9", "-acodec", "libmp3lame",
-        silence_clip
-    ]
-    subprocess.run(sil_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
-
-    # Add silence audio to thumbnail clip
-    thumb_clip_audio = "outputs/video/thumb_frame_audio.mp4"
-    merge_cmd = [
-        ffmpeg, "-y", "-nostdin",
-        "-i", thumb_clip,
-        "-i", silence_clip,
-        "-c:v", "copy", "-c:a", "aac", "-b:a", "192k",
+        "-c:v", "libx264", "-preset", "ultrafast", "-pix_fmt", "yuv420p",
+        "-c:a", "aac", "-b:a", "256k", "-ar", "48000",
         "-shortest",
         thumb_clip_audio
     ]
-    subprocess.run(merge_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+    r1 = subprocess.run(thumb_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+    if r1.returncode != 0:
+        safe_print(f"⚠️ Could not create thumbnail frame clip: {r1.stderr.decode('utf-8', errors='replace')[-500:]}")
+        return video_path  # fall back to original
 
-    # Concat list
+    # Step 2: Concat thumbnail clip + main video using full re-encode so
+    #         frame/audio specs are guaranteed to match.
     concat_list = "outputs/video/thumb_concat.txt"
     with open(concat_list, "w") as f:
         f.write(f"file '{os.path.abspath(thumb_clip_audio)}'\n")
@@ -264,7 +272,9 @@ def prepend_thumbnail_frame(thumbnail_path, video_path, output_path, duration=1.
         ffmpeg, "-y", "-nostdin",
         "-f", "concat", "-safe", "0",
         "-i", concat_list,
-        "-c", "copy",
+        # Re-encode both streams so specs are guaranteed compatible
+        "-c:v", "libx264", "-preset", "ultrafast", "-pix_fmt", "yuv420p",
+        "-c:a", "aac", "-b:a", "256k", "-ar", "48000",
         output_path
     ]
     r2 = subprocess.run(concat_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
@@ -272,7 +282,8 @@ def prepend_thumbnail_frame(thumbnail_path, video_path, output_path, duration=1.
         safe_print(f"✅ Thumbnail frame prepended to video ({duration}s still at start).")
         return output_path
     else:
-        safe_print(f"⚠️ Concat failed, using original video: {r2.stderr.decode('utf-8', errors='replace')[-300:]}")
+        err = r2.stderr.decode('utf-8', errors='replace')[-500:]
+        safe_print(f"⚠️ Concat failed (returncode={r2.returncode}), using original video.\n   FFmpeg error: {err}")
         return video_path
 
 
@@ -489,7 +500,11 @@ def generate():
     bg = request.files.get('bg_image')
     thumb = request.files.get('thumbnail')
     
-    if bg and thumb and bg.filename and thumb.filename:
+    # For Shorts, the background image doubles as the thumbnail — no separate upload needed
+    if video_type == 'short' and bg and bg.filename and (not thumb or not thumb.filename):
+        thumb = None  # Will be handled below by reusing bg_path
+
+    if bg and bg.filename:
         # Block concurrent pipeline runs
         global _pipeline_running
         if _pipeline_running:
@@ -505,9 +520,13 @@ def generate():
             """
         _pipeline_running = True
         bg_path = os.path.join(app.config['UPLOAD_FOLDER'], "bg_" + secure_filename(bg.filename))
-        thumb_path = os.path.join(app.config['UPLOAD_FOLDER'], "thumb_" + secure_filename(thumb.filename))
         bg.save(bg_path)
-        thumb.save(thumb_path)
+        if thumb and thumb.filename:
+            thumb_path = os.path.join(app.config['UPLOAD_FOLDER'], "thumb_" + secure_filename(thumb.filename))
+            thumb.save(thumb_path)
+        else:
+            # Shorts: reuse the background image as the thumbnail
+            thumb_path = bg_path
         
         # Start in background
         thread = threading.Thread(target=run_pipeline, args=(topic, script, bg_path, thumb_path, video_type), daemon=True)
