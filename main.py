@@ -132,10 +132,35 @@ def parse_script(script_text):
         line = line.strip()
         if not line:
             continue
-        
+
+        # --- Inline label format: "BOY: some text" / "GIRL: some text" ---
+        inline_match = re.match(r'^(BOY|GIRL|BOTH|PAUSE)\s*:\s*(.*)', line, re.IGNORECASE)
+        if inline_match:
+            label = inline_match.group(1).upper()
+            rest  = inline_match.group(2).strip()
+            flush()
+            if label == 'BOY':
+                current_speaker = "boy"
+                current_text = [rest] if rest else []
+            elif label == 'GIRL':
+                current_speaker = "girl"
+                current_text = [rest] if rest else []
+            elif label == 'BOTH':
+                current_speaker = "boy"
+                current_text = [rest] if rest else []
+            elif label == 'PAUSE':
+                current_speaker = None
+                try:
+                    duration = str(float(rest)) if rest else "2.0"
+                except ValueError:
+                    duration = "2.0"
+                raw_dialogues.append({"speaker": "pause", "text": duration})
+                current_text = []
+            continue
+
         upper_line = line.upper().replace(' ', '')
-        
-        # Speaker labels
+
+        # Speaker labels (standalone line, no inline text)
         if upper_line in ('BOY:', '[BOY]', 'BOY'):
             flush()
             current_speaker = "boy"
