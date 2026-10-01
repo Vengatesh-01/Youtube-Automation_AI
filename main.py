@@ -207,6 +207,75 @@ def parse_script(script_text):
 
 
 
+def prepend_thumbnail_frame(thumbnail_path, video_path, output_path, duration=1.0):
+    """
+    Prepend the thumbnail image as a still frame at the start of the video.
+    YouTube Shorts uses the first frame as the feed thumbnail, so burning
+    the custom thumbnail image here guarantees it appears in the Shorts feed.
+    """
+    ffmpeg = get_ffmpeg()
+    thumb_clip = "outputs/video/thumb_frame.mp4"
+
+    # Detect video dimensions from the main video
+    probe_cmd = [
+        ffmpeg, "-y", "-nostdin",
+        "-loop", "1", "-t", str(duration),
+        "-i", thumbnail_path,
+        "-vf", "scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920",
+        "-c:v", "libx264", "-preset", "ultrafast",
+        "-pix_fmt", "yuv420p",
+        "-an",  # no audio on the thumbnail frame
+        thumb_clip
+    ]
+    r1 = subprocess.run(probe_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+    if r1.returncode != 0:
+        safe_print(f"⚠️ Could not create thumbnail frame clip: {r1.stderr.decode('utf-8', errors='replace')[-300:]}")
+        return video_path  # fall back to original
+
+    # Create a silent audio clip of the same duration to match the thumbnail frame
+    silence_clip = "outputs/video/thumb_silence.mp3"
+    sil_cmd = [
+        ffmpeg, "-y", "-nostdin",
+        "-f", "lavfi", "-i", f"anullsrc=r=44100:cl=stereo",
+        "-t", str(duration), "-q:a", "9", "-acodec", "libmp3lame",
+        silence_clip
+    ]
+    subprocess.run(sil_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+
+    # Add silence audio to thumbnail clip
+    thumb_clip_audio = "outputs/video/thumb_frame_audio.mp4"
+    merge_cmd = [
+        ffmpeg, "-y", "-nostdin",
+        "-i", thumb_clip,
+        "-i", silence_clip,
+        "-c:v", "copy", "-c:a", "aac", "-b:a", "192k",
+        "-shortest",
+        thumb_clip_audio
+    ]
+    subprocess.run(merge_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+
+    # Concat list
+    concat_list = "outputs/video/thumb_concat.txt"
+    with open(concat_list, "w") as f:
+        f.write(f"file '{os.path.abspath(thumb_clip_audio)}'\n")
+        f.write(f"file '{os.path.abspath(video_path)}'\n")
+
+    concat_cmd = [
+        ffmpeg, "-y", "-nostdin",
+        "-f", "concat", "-safe", "0",
+        "-i", concat_list,
+        "-c", "copy",
+        output_path
+    ]
+    r2 = subprocess.run(concat_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+    if r2.returncode == 0 and os.path.exists(output_path):
+        safe_print(f"✅ Thumbnail frame prepended to video ({duration}s still at start).")
+        return output_path
+    else:
+        safe_print(f"⚠️ Concat failed, using original video: {r2.stderr.decode('utf-8', errors='replace')[-300:]}")
+        return video_path
+
+
 def assemble_audio(audio_files, output_file):
     list_file = "outputs/audio/concat_list.txt"
     with open(list_file, "w") as f:
@@ -323,10 +392,21 @@ Let's begin.
         
         # 5. Video Assembly
         log_msg("Assembling video...")
+        raw_video   = "outputs/video/raw_video.mp4"
         final_video = "outputs/video/final_video.mp4"
-        video_result = assemble_podcast_video(bg_path, final_audio, sub_file, final_video, video_type)
+        video_result = assemble_podcast_video(bg_path, final_audio, sub_file, raw_video, video_type)
         if not video_result:
             raise Exception("Video assembly failed.")
+
+        # 5b. For Shorts: prepend thumbnail image as the first 1-second still frame.
+        #     YouTube Shorts displays the first video frame in the feed — burning the
+        #     custom thumbnail here guarantees the correct image is always shown.
+        if video_type == "short" and thumb_path and os.path.isfile(thumb_path):
+            log_msg("Prepending thumbnail frame to Short (ensures correct thumbnail in feed)...")
+            prepend_thumbnail_frame(thumb_path, raw_video, final_video, duration=1.0)
+        else:
+            import shutil
+            shutil.copy2(raw_video, final_video)
             
         # 6. YouTube Metadata
         log_msg("Generating YouTube metadata...")
